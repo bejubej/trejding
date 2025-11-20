@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorecard Trading</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px; 
+      margin: 0;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 { 
+      color: #333; 
+      text-align: center; 
+      margin-bottom: 30px;
+      font-size: 2.5em;
+    }
+    .stats-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    .export-btn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 20px auto;
+      display: block;
+      transition: background 0.3s;
+    }
+    .export-btn:hover {
+      background: #45a049;
+    }
+    table { 
+      border-collapse: collapse; 
+      width: 100%; 
+      margin-bottom: 20px; 
+      background: white; 
+      table-layout: fixed;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 12px; 
+      text-align: center;
+    }
+    th { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+    }
+    .day-cell {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+    .toggle { 
+      cursor: pointer; 
+      padding: 8px 16px; 
+      border-radius: 6px; 
+      border: none;
+      display: inline-block; 
+      min-width: 40px; 
+      user-select: none;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .on { 
+      background: #4caf50; 
+      color: white;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+    .off { 
+      background: #e0e0e0; 
+      color: #666;
+    }
+    .toggle:hover {
+      transform: scale(1.1);
+    }
+    .notes { 
+      width: 100%; 
+      height: 50px; 
+      resize: vertical;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px;
+      font-family: inherit;
+    }
+    .date-range { 
+      margin: 30px 0 20px 0; 
+      padding: 15px; 
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+    }
+    .date-range input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 0 5px;
+    }
+    .week-summary {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f0f4ff;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .summary-label {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    @media (max-width: 768px) {
+      .container { padding: 15px; }
+      h1 { font-size: 1.8em; }
+      th, td { padding: 8px; font-size: 0.9em; }
+      .toggle { padding: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="content">
+    <h1>📊 Interaktywny Scorecard Trading</h1>
+    
+    <div class="stats-overview" id="statsOverview"></div>
+    
+    <button class="export-btn" onclick="exportToPDF()">📥 Eksportuj do PDF</button>
+
+    <div id="scorecards"></div>
+  </div>
+
+  <script>
+    const days = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"];
+    const fields = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"]; 
+
+    function createToggle(initial = 0, weekIndex, dayIndex, fieldIndex) {
+      const el = document.createElement("div");
+      el.className = "toggle " + (initial ? "on" : "off");
+      el.textContent = initial;
+      el.onclick = () => {
+        const value = el.textContent === "1" ? 0 : 1;
+        el.textContent = value;
+        el.className = "toggle " + (value ? "on" : "off");
+        saveState();
+        updateSums();
+        updateAllStatistics();
+      };
+      return el;
+    }
+
+    function buildTable(index) {
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const tbody = document.createElement("tbody");
+
+      const headRow = document.createElement("tr");
+      const thDay = document.createElement("th");
+      thDay.textContent = "Dzień";
+      headRow.appendChild(thDay);
+
+      fields.forEach(f => {
+        const th = document.createElement("th"); 
+        th.textContent = f; 
+        headRow.appendChild(th);
+      });
+
+      const thSum = document.createElement("th"); 
+      thSum.textContent = "Suma"; 
+      headRow.appendChild(thSum);
+      
+      const thNotes = document.createElement("th"); 
+      thNotes.textContent = "Notatki"; 
+      headRow.appendChild(thNotes);
+
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      days.forEach((day, rowIndex) => {
+        const tr = document.createElement("tr");
+        const dayCell = document.createElement("td"); 
+        dayCell.className = "day-cell";
+        dayCell.textContent = day; 
+        tr.appendChild(dayCell);
+
+        fields.forEach((_, colIndex) => {
+          const td = document.createElement("td");
+          td.appendChild(createToggle(0, index, rowIndex, colIndex));
+          tr.appendChild(td);
+        });
+
+        const sumCell = document.createElement("td"); 
+        sumCell.className = "sumCell"; 
+        sumCell.textContent = "0/5";
+        tr.appendChild(sumCell);
+
+        const notesCell = document.createElement("td");
+        const notes = document.createElement("textarea");
+        notes.className = "notes";
+        notes.placeholder = "Dodaj notatkę...";
+        notes.oninput = () => saveState();
+        notesCell.appendChild(notes);
+        tr.appendChild(notesCell);
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      return table;
+    }
+
+    function updateSums() {
+      document.querySelectorAll("tbody tr").forEach(row => {
+        const toggles = row.querySelectorAll(".toggle");
+        let sum = 0;
+        toggles.forEach(t => sum += Number(t.textContent));
+        const sumCell = row.querySelector(".sumCell");
+        sumCell.textContent = `${sum}/${fields.length}`;
+        
+        // Kolorowanie w zależności od wyniku
+        if (sum === fields.length) {
+          sumCell.style.background = "#4caf50";
+          sumCell.style.color = "white";
+          sumCell.style.fontWeight = "bold";
+        } else if (sum >= fields.length * 0.6) {
+          sumCell.style.background = "#fff3cd";
+          sumCell.style.color = "#856404";
+        } else {
+          sumCell.style.background = "#f8d7da";
+          sumCell.style.color = "#721c24";
+        }
+      });
+    }
+
+    function calculateWeekStats(weekIndex) {
+      const tables = document.querySelectorAll("#scorecards table");
+      if (!tables[weekIndex]) {
+        return {
+          totalChecked: 0,
+          totalPossible: days.length * fields.length,
+          percentage: 0,
+          perfectDays: 0
+        };
+      }
+      
+      const table = tables[weekIndex];
+      const rows = table.querySelectorAll("tbody tr");
+      
+      let totalChecked = 0;
+      let totalPossible = days.length * fields.length;
+      let perfectDays = 0;
+      
+      rows.forEach(row => {
+        const toggles = row.querySelectorAll(".toggle");
+        let daySum = 0;
+        toggles.forEach(t => {
+          const val = Number(t.textContent);
+          totalChecked += val;
+          daySum += val;
+        });
+        if (daySum === fields.length) perfectDays++;
+      });
+      
+      const percentage = ((totalChecked / totalPossible) * 100).toFixed(1);
+      
+      return {
+        totalChecked,
+        totalPossible,
+        percentage,
+        perfectDays
+      };
+    }
+
+    function createWeekSummary(weekIndex) {
+      const stats = calculateWeekStats(weekIndex);
+      const summary = document.createElement("div");
+      summary.className = "week-summary";
+      
+      summary.innerHTML = `
+        <div class="summary-item">
+          <div class="summary-value">${stats.percentage}%</div>
+          <div class="summary-label">Wykonanie</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">${stats.totalChecked}/${stats.totalPossible}</div>
+          <div class="summary-label">Punkty</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">${stats.perfectDays}/5</div>
+          <div class="summary-label">Perfekcyjne dni</div>
+        </div>
+      `;
+      
+      const progressBar = document.createElement("div");
+      progressBar.className = "progress-bar";
+      progressBar.innerHTML = `
+        <div class="progress-fill" style="width: ${stats.percentage}%">
+          ${stats.percentage}%
+        </div>
+      `;
+      summary.appendChild(progressBar);
+      
+      return summary;
+    }
+
+    function updateAllStatistics() {
+      // Aktualizuj podsumowania tygodniowe
+      document.querySelectorAll(".week-summary").forEach((summary, index) => {
+        const newSummary = createWeekSummary(index);
+        summary.innerHTML = newSummary.innerHTML;
+      });
+      
+      // Aktualizuj ogólne statystyki
+      updateOverallStats();
+    }
+
+    function updateOverallStats() {
+      let totalChecked = 0;
+      let totalPossible = 0;
+      let totalPerfectDays = 0;
+      let weeksWithData = 0;
+      
+      for (let i = 0; i < 4; i++) {
+        const stats = calculateWeekStats(i);
+        totalChecked += stats.totalChecked;
+        totalPossible += stats.totalPossible;
+        totalPerfectDays += stats.perfectDays;
+        if (stats.totalChecked > 0) weeksWithData++;
+      }
+      
+      const overallPercentage = totalPossible > 0 ? ((totalChecked / totalPossible) * 100).toFixed(1) : 0;
+      const avgPerWeek = weeksWithData > 0 ? (totalChecked / weeksWithData).toFixed(1) : 0;
+      
+      const statsOverview = document.getElementById("statsOverview");
+      statsOverview.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Ogólne wykonanie</div>
+          <div class="stat-value">${overallPercentage}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Łącznie punktów</div>
+          <div class="stat-value">${totalChecked}/${totalPossible}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Perfekcyjne dni</div>
+          <div class="stat-value">${totalPerfectDays}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Średnia/tydzień</div>
+          <div class="stat-value">${avgPerWeek}</div>
+        </div>
+      `;
+    }
+
+    function saveState() {
+      const data = {
+        scorecards: [],
+        dateRanges: []
+      };
+      
+      document.querySelectorAll("#scorecards > div").forEach((section, sIndex) => {
+        // Zapisz daty
+        const dateInputs = section.querySelectorAll("input[type='date']");
+        data.dateRanges.push({
+          start: dateInputs[0].value,
+          end: dateInputs[1].value
+        });
+        
+        // Zapisz dane tabeli
+        const table = section.querySelector("table");
+        const rows = table.querySelectorAll("tbody tr");
+        const rowData = [];
+
+        rows.forEach((row) => {
+          const toggles = [...row.querySelectorAll(".toggle")].map(t => t.textContent);
+          const note = row.querySelector("textarea").value;
+          rowData.push({ toggles, note });
+        });
+        data.scorecards.push(rowData);
+      });
+      
+      localStorage.setItem("scorecardData", JSON.stringify(data));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem("scorecardData");
+      if (!saved) return;
+      
+      try {
+        const data = JSON.parse(saved);
+
+        document.querySelectorAll("#scorecards > div").forEach((section, sIndex) => {
+          // Załaduj daty
+          if (data.dateRanges && data.dateRanges[sIndex]) {
+            const dateInputs = section.querySelectorAll("input[type='date']");
+            dateInputs[0].value = data.dateRanges[sIndex].start || "";
+            dateInputs[1].value = data.dateRanges[sIndex].end || "";
+          }
+          
+          // Załaduj dane tabeli
+          const table = section.querySelector("table");
+          const rows = table.querySelectorAll("tbody tr");
+
+          rows.forEach((row, rIndex) => {
+            if (data.scorecards[sIndex] && data.scorecards[sIndex][rIndex]) {
+              const savedRow = data.scorecards[sIndex][rIndex];
+              const toggles = row.querySelectorAll(".toggle");
+
+              toggles.forEach((t, cIndex) => {
+                const val = savedRow.toggles[cIndex];
+                t.textContent = val;
+                t.className = "toggle " + (val === "1" ? "on" : "off");
+              });
+
+              row.querySelector("textarea").value = savedRow.note || "";
+            }
+          });
+        });
+
+        updateSums();
+        updateAllStatistics();
+      } catch (e) {
+        console.error("Błąd ładowania danych:", e);
+      }
+    }
+
+    function exportToPDF() {
+      const element = document.getElementById("content");
+      const opt = {
+        margin: 10,
+        filename: `trading-scorecard-${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).save();
+    }
+
+    // Inicjalizacja
+    const container = document.getElementById("scorecards");
+
+    for (let i = 1; i <= 4; i++) {
+      const section = document.createElement("div");
+      
+      const dateBox = document.createElement("div");
+      dateBox.className = "date-range";
+      dateBox.innerHTML = `
+        <strong>Tydzień ${i} - Zakres dat:</strong> 
+        <input type="date" onchange="saveState()"> — 
+        <input type="date" onchange="saveState()">
+      `;
+
+      section.appendChild(dateBox);
+      section.appendChild(buildTable(i - 1));
+      section.appendChild(createWeekSummary(i - 1));
+      
+      container.appendChild(section);
+    }
+
+    loadState();
+    updateAllStatistics();
+  </script>
+</body>
+</html>
