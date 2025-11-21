@@ -77,6 +77,38 @@
       padding: 12px; 
       text-align: center;
     }
+    .day-off-btn {
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #ff9800;
+      background: white;
+      color: #ff9800;
+      font-size: 0.85em;
+      margin-left: 10px;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+    .day-off-btn:hover {
+      background: #ff9800;
+      color: white;
+    }
+    .day-off-btn.active {
+      background: #ff9800;
+      color: white;
+      font-weight: bold;
+    }
+    tr.day-off {
+      background: #f5f5f5;
+      opacity: 0.6;
+    }
+    tr.day-off .toggle {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    tr.day-off .notes {
+      background: #e0e0e0;
+    }
     th { 
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -238,9 +270,23 @@
 
       days.forEach((day, rowIndex) => {
         const tr = document.createElement("tr");
+        tr.dataset.weekIndex = index;
+        tr.dataset.dayIndex = rowIndex;
+        
         const dayCell = document.createElement("td"); 
         dayCell.className = "day-cell";
-        dayCell.textContent = day; 
+        
+        const dayText = document.createTextNode(day + " ");
+        dayCell.appendChild(dayText);
+        
+        const dayOffBtn = document.createElement("span");
+        dayOffBtn.className = "day-off-btn";
+        dayOffBtn.textContent = "🚫 Dzień wolny";
+        dayOffBtn.onclick = function() {
+          toggleDayOff(index, rowIndex);
+        };
+        dayCell.appendChild(dayOffBtn);
+        
         tr.appendChild(dayCell);
 
         fields.forEach((_, colIndex) => {
@@ -271,6 +317,14 @@
 
     function updateSums() {
       document.querySelectorAll("tbody tr").forEach(row => {
+        if (row.classList.contains('day-off')) {
+          const sumCell = row.querySelector(".sumCell");
+          sumCell.textContent = "—";
+          sumCell.style.background = "#9e9e9e";
+          sumCell.style.color = "white";
+          return;
+        }
+        
         const toggles = row.querySelectorAll(".toggle");
         let sum = 0;
         toggles.forEach(t => sum += Number(t.textContent));
@@ -299,7 +353,8 @@
           totalChecked: 0,
           totalPossible: days.length * fields.length,
           percentage: 0,
-          perfectDays: 0
+          perfectDays: 0,
+          activeDays: days.length
         };
       }
       
@@ -307,10 +362,16 @@
       const rows = table.querySelectorAll("tbody tr");
       
       let totalChecked = 0;
-      let totalPossible = days.length * fields.length;
+      let activeDays = 0;
       let perfectDays = 0;
       
       rows.forEach(row => {
+        // Pomijaj dni wolne
+        if (row.classList.contains('day-off')) {
+          return;
+        }
+        
+        activeDays++;
         const toggles = row.querySelectorAll(".toggle");
         let daySum = 0;
         toggles.forEach(t => {
@@ -321,13 +382,15 @@
         if (daySum === fields.length) perfectDays++;
       });
       
-      const percentage = ((totalChecked / totalPossible) * 100).toFixed(1);
+      const totalPossible = activeDays * fields.length;
+      const percentage = totalPossible > 0 ? ((totalChecked / totalPossible) * 100).toFixed(1) : 0;
       
       return {
         totalChecked,
         totalPossible,
         percentage,
-        perfectDays
+        perfectDays,
+        activeDays
       };
     }
 
@@ -365,9 +428,28 @@
 
     function updateAllStatistics() {
       // Aktualizuj podsumowania tygodniowe
-      document.querySelectorAll(".week-summary").forEach((summary, index) => {
-        const newSummary = createWeekSummary(index);
-        summary.innerHTML = newSummary.innerHTML;
+      const summaries = document.querySelectorAll(".week-summary");
+      summaries.forEach((summary, index) => {
+        const stats = calculateWeekStats(index);
+        summary.innerHTML = `
+          <div class="summary-item">
+            <div class="summary-value">${stats.percentage}%</div>
+            <div class="summary-label">Wykonanie</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${stats.totalChecked}/${stats.totalPossible}</div>
+            <div class="summary-label">Punkty</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${stats.perfectDays}/${stats.activeDays}</div>
+            <div class="summary-label">Perfekcyjne dni</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${stats.percentage}%">
+              ${stats.percentage}%
+            </div>
+          </div>
+        `;
       });
       
       // Aktualizuj ogólne statystyki
@@ -415,7 +497,8 @@
     function saveState() {
       const data = {
         scorecards: [],
-        dateRanges: []
+        dateRanges: [],
+        daysOff: []
       };
       
       document.querySelectorAll("#scorecards > div").forEach((section, sIndex) => {
@@ -426,11 +509,18 @@
           end: dateInputs[1].value
         });
         
-        // Zapisz dane tabeli
+        // Zapisz dni wolne
         const table = section.querySelector("table");
         const rows = table.querySelectorAll("tbody tr");
+        const weekDaysOff = [];
+        
+        rows.forEach((row, rIndex) => {
+          weekDaysOff.push(row.classList.contains('day-off'));
+        });
+        data.daysOff.push(weekDaysOff);
+        
+        // Zapisz dane tabeli
         const rowData = [];
-
         rows.forEach((row) => {
           const toggles = [...row.querySelectorAll(".toggle")].map(t => t.textContent);
           const note = row.querySelector("textarea").value;
@@ -462,6 +552,13 @@
           const rows = table.querySelectorAll("tbody tr");
 
           rows.forEach((row, rIndex) => {
+            // Załaduj status dnia wolnego
+            if (data.daysOff && data.daysOff[sIndex] && data.daysOff[sIndex][rIndex]) {
+              row.classList.add('day-off');
+              const btn = row.querySelector('.day-off-btn');
+              if (btn) btn.classList.add('active');
+            }
+            
             if (data.scorecards[sIndex] && data.scorecards[sIndex][rIndex]) {
               const savedRow = data.scorecards[sIndex][rIndex];
               const toggles = row.querySelectorAll(".toggle");
@@ -497,6 +594,27 @@
       html2pdf().set(opt).from(element).save();
     }
 
+    function toggleDayOff(weekIndex, dayIndex) {
+      const tables = document.querySelectorAll("#scorecards table");
+      const table = tables[weekIndex];
+      const row = table.querySelectorAll("tbody tr")[dayIndex];
+      const btn = row.querySelector('.day-off-btn');
+      
+      if (row.classList.contains('day-off')) {
+        // Włącz dzień
+        row.classList.remove('day-off');
+        btn.classList.remove('active');
+      } else {
+        // Wyłącz dzień
+        row.classList.add('day-off');
+        btn.classList.add('active');
+      }
+      
+      saveState();
+      updateSums();
+      updateAllStatistics();
+    }
+
     // Inicjalizacja
     const container = document.getElementById("scorecards");
 
@@ -522,5 +640,4 @@
     updateAllStatistics();
   </script>
 </body>
-
 </html>
