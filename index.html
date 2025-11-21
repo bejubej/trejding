@@ -236,9 +236,14 @@
     
     <div class="stats-overview" id="statsOverview"></div>
     
-    <button class="export-btn" onclick="exportToPDF()">📥 Eksportuj do PDF</button>
+    <div class="button-container">
+      <button class="export-btn" onclick="exportToPDF()">📥 Eksportuj do PDF</button>
+      <button class="reset-btn" onclick="resetAll()">🔄 Reset wszystkich danych</button>
+    </div>
 
-    <div id="scorecards"></div>
+    <div id="exportContent">
+      <div id="scorecards"></div>
+    </div>
   </div>
 
   <script>
@@ -601,7 +606,7 @@
     }
 
     function exportToPDF() {
-      const element = document.getElementById("content");
+      const element = document.getElementById("exportContent");
       const opt = {
         margin: 10,
         filename: `trading-scorecard-${new Date().toISOString().split('T')[0]}.pdf`,
@@ -611,6 +616,44 @@
       };
       
       html2pdf().set(opt).from(element).save();
+    }
+
+    function resetAll() {
+      if (!confirm('Czy na pewno chcesz wyczyścić WSZYSTKIE dane? Ta operacja jest nieodwracalna!')) {
+        return;
+      }
+      
+      // Wyczyść localStorage
+      localStorage.removeItem("scorecardData");
+      
+      // Zresetuj wszystkie toggles
+      document.querySelectorAll(".toggle").forEach(toggle => {
+        toggle.textContent = "0";
+        toggle.className = "toggle off";
+      });
+      
+      // Wyczyść wszystkie notatki
+      document.querySelectorAll(".notes").forEach(note => {
+        note.value = "";
+      });
+      
+      // Wyczyść wszystkie daty
+      document.querySelectorAll("input[type='date']").forEach(input => {
+        input.value = "";
+      });
+      
+      // Usuń wszystkie dni wolne
+      document.querySelectorAll("tbody tr").forEach(row => {
+        row.classList.remove('day-off');
+        const btn = row.querySelector('.day-off-btn');
+        if (btn) btn.classList.remove('active');
+      });
+      
+      // Zaktualizuj sumy i statystyki
+      updateSums();
+      updateAllStatistics();
+      
+      alert('Wszystkie dane zostały wyczyszczone!');
     }
 
     function toggleDayOff(weekIndex, dayIndex) {
