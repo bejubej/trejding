@@ -83,6 +83,67 @@
       text-align: center;
       margin: 20px 0;
     }
+    .sync-section {
+      background: #e3f2fd;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border-left: 4px solid #2196f3;
+    }
+    .sync-section h3 {
+      margin-top: 0;
+      color: #1976d2;
+    }
+    .token-input {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      margin: 10px 0;
+    }
+    .sync-btn {
+      background: #2196f3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+      transition: background 0.3s;
+    }
+    .sync-btn:hover {
+      background: #1976d2;
+    }
+    .sync-btn.success {
+      background: #4caf50;
+    }
+    .sync-status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .sync-status.show {
+      display: block;
+    }
+    .sync-status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .sync-status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .sync-status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
     table { 
       border-collapse: collapse; 
       width: 100%; 
@@ -234,6 +295,28 @@
   <div class="container" id="content">
     <h1>📊 Interaktywny Scorecard Trading</h1>
     
+    <div class="sync-section">
+      <h3>☁️ Synchronizacja między urządzeniami (GitHub Gist)</h3>
+      <div>
+        <input type="password" id="githubToken" class="token-input" placeholder="Wklej swój GitHub Personal Access Token...">
+        <button class="sync-btn" onclick="saveToken()">💾 Zapisz Token</button>
+        <button class="sync-btn" onclick="removeToken()">🗑️ Usuń Token</button>
+      </div>
+      <div style="margin-top: 10px;">
+        <button class="sync-btn" onclick="syncToCloud()">☁️ Zapisz do Cloud</button>
+        <button class="sync-btn" onclick="syncFromCloud()">📥 Wczytaj z Cloud</button>
+        <label style="margin-left: 15px;">
+          <input type="checkbox" id="autoSync" onchange="toggleAutoSync()"> Auto-sync co 30s
+        </label>
+      </div>
+      <div id="syncStatus" class="sync-status"></div>
+      <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+        <strong>Jak uzyskać token?</strong><br>
+        GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token<br>
+        Zaznacz tylko uprawnienie <strong>"gist"</strong>
+      </div>
+    </div>
+    
     <div class="stats-overview" id="statsOverview"></div>
     
     <div class="button-container">
@@ -249,6 +332,160 @@
   <script>
     const days = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"];
     const fields = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"]; 
+    let autoSyncInterval = null;
+
+    // GitHub Gist sync functions
+    function showSyncStatus(message, type) {
+      const status = document.getElementById('syncStatus');
+      status.textContent = message;
+      status.className = `sync-status show ${type}`;
+      setTimeout(() => {
+        status.classList.remove('show');
+      }, 5000);
+    }
+
+    function saveToken() {
+      const token = document.getElementById('githubToken').value.trim();
+      if (!token) {
+        showSyncStatus('Wpisz token!', 'error');
+        return;
+      }
+      localStorage.setItem('githubToken', token);
+      showSyncStatus('Token zapisany!', 'success');
+      document.getElementById('githubToken').value = '';
+    }
+
+    function removeToken() {
+      localStorage.removeItem('githubToken');
+      localStorage.removeItem('gistId');
+      showSyncStatus('Token usunięty', 'info');
+    }
+
+    function getToken() {
+      return localStorage.getItem('githubToken');
+    }
+
+    function getGistId() {
+      return localStorage.getItem('gistId');
+    }
+
+    async function syncToCloud() {
+      const token = getToken();
+      if (!token) {
+        showSyncStatus('Najpierw zapisz GitHub token!', 'error');
+        return;
+      }
+
+      const data = localStorage.getItem("scorecardData");
+      if (!data) {
+        showSyncStatus('Brak danych do zapisania', 'error');
+        return;
+      }
+
+      showSyncStatus('Zapisywanie...', 'info');
+
+      const gistId = getGistId();
+      const gistData = {
+        description: "Trading Scorecard Data",
+        public: false,
+        files: {
+          "scorecard-data.json": {
+            content: data
+          }
+        }
+      };
+
+      try {
+        let response;
+        if (gistId) {
+          // Update existing gist
+          response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(gistData)
+          });
+        } else {
+          // Create new gist
+          response = await fetch('https://api.github.com/gists', {
+            method: 'POST',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(gistData)
+          });
+        }
+
+        if (!response.ok) {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        localStorage.setItem('gistId', result.id);
+        showSyncStatus('✓ Zapisano do cloud!', 'success');
+      } catch (error) {
+        console.error('Sync error:', error);
+        showSyncStatus('Błąd synchronizacji: ' + error.message, 'error');
+      }
+    }
+
+    async function syncFromCloud() {
+      const token = getToken();
+      const gistId = getGistId();
+
+      if (!token) {
+        showSyncStatus('Najpierw zapisz GitHub token!', 'error');
+        return;
+      }
+
+      if (!gistId) {
+        showSyncStatus('Nie znaleziono danych w cloud. Najpierw zapisz dane.', 'error');
+        return;
+      }
+
+      showSyncStatus('Pobieranie...', 'info');
+
+      try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: {
+            'Authorization': `token ${token}`,
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const content = result.files["scorecard-data.json"].content;
+        
+        localStorage.setItem("scorecardData", content);
+        loadState();
+        showSyncStatus('✓ Wczytano z cloud!', 'success');
+      } catch (error) {
+        console.error('Sync error:', error);
+        showSyncStatus('Błąd pobierania: ' + error.message, 'error');
+      }
+    }
+
+    function toggleAutoSync() {
+      const checkbox = document.getElementById('autoSync');
+      if (checkbox.checked) {
+        autoSyncInterval = setInterval(() => {
+          syncToCloud();
+        }, 30000); // 30 seconds
+        showSyncStatus('Auto-sync włączony (co 30s)', 'success');
+      } else {
+        if (autoSyncInterval) {
+          clearInterval(autoSyncInterval);
+          autoSyncInterval = null;
+        }
+        showSyncStatus('Auto-sync wyłączony', 'info');
+      }
+    } 
 
     function createToggle(initial = 0, weekIndex, dayIndex, fieldIndex) {
       const el = document.createElement("div");
@@ -700,6 +937,23 @@
 
     loadState();
     updateAllStatistics();
+    
+    // Load token field if exists
+    if (getToken()) {
+      document.getElementById('githubToken').placeholder = "Token zapisany ✓";
+    }
+    
+    // Check for auto-sync preference
+    const autoSyncPref = localStorage.getItem('autoSyncEnabled');
+    if (autoSyncPref === 'true') {
+      document.getElementById('autoSync').checked = true;
+      toggleAutoSync();
+    }
+    
+    // Save auto-sync preference
+    document.getElementById('autoSync').addEventListener('change', function() {
+      localStorage.setItem('autoSyncEnabled', this.checked);
+    });
   </script>
 </body>
 </html>
