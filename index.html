@@ -863,22 +863,41 @@
 
     function loadState() {
       const saved = localStorage.getItem("scorecardData");
-      if (!saved) return false;
+      if (!saved) {
+        console.log("Brak danych w localStorage");
+        return false;
+      }
       
       try {
+        console.log("Ładowanie danych z localStorage...");
         const data = JSON.parse(saved);
+        console.log("Dane sparsowane:", data);
 
-        document.querySelectorAll("#scorecards > div").forEach((section, sIndex) => {
+        const sections = document.querySelectorAll("#scorecards > div");
+        console.log("Znaleziono sekcji:", sections.length);
+
+        sections.forEach((section, sIndex) => {
+          console.log(`Ładowanie sekcji ${sIndex}...`);
+          
           // Załaduj daty
           if (data.dateRanges && data.dateRanges[sIndex]) {
             const dateInputs = section.querySelectorAll("input[type='date']");
-            dateInputs[0].value = data.dateRanges[sIndex].start || "";
-            dateInputs[1].value = data.dateRanges[sIndex].end || "";
+            if (dateInputs.length >= 2) {
+              dateInputs[0].value = data.dateRanges[sIndex].start || "";
+              dateInputs[1].value = data.dateRanges[sIndex].end || "";
+              console.log(`Daty załadowane: ${dateInputs[0].value} - ${dateInputs[1].value}`);
+            }
           }
           
           // Załaduj dane tabeli
           const table = section.querySelector("table");
+          if (!table) {
+            console.error(`Nie znaleziono tabeli w sekcji ${sIndex}`);
+            return;
+          }
+          
           const rows = table.querySelectorAll("tbody tr");
+          console.log(`Znaleziono wierszy: ${rows.length}`);
 
           rows.forEach((row, rIndex) => {
             // Załaduj status dnia wolnego
@@ -886,28 +905,38 @@
               row.classList.add('day-off');
               const btn = row.querySelector('.day-off-btn');
               if (btn) btn.classList.add('active');
+              console.log(`Dzień ${rIndex} oznaczony jako wolny`);
             }
             
-            if (data.scorecards[sIndex] && data.scorecards[sIndex][rIndex]) {
+            if (data.scorecards && data.scorecards[sIndex] && data.scorecards[sIndex][rIndex]) {
               const savedRow = data.scorecards[sIndex][rIndex];
               const toggles = row.querySelectorAll(".toggle");
 
               toggles.forEach((t, cIndex) => {
-                const val = savedRow.toggles[cIndex];
-                t.textContent = val;
-                t.className = "toggle " + (val === "1" ? "on" : "off");
+                if (savedRow.toggles && savedRow.toggles[cIndex] !== undefined) {
+                  const val = savedRow.toggles[cIndex];
+                  t.textContent = val;
+                  t.className = "toggle " + (val === "1" ? "on" : "off");
+                }
               });
 
-              row.querySelector("textarea").value = savedRow.note || "";
+              const textarea = row.querySelector("textarea");
+              if (textarea && savedRow.note !== undefined) {
+                textarea.value = savedRow.note || "";
+              }
+              console.log(`Wiersz ${rIndex} załadowany:`, savedRow.toggles);
             }
           });
         });
 
+        console.log("Aktualizacja sum i statystyk...");
         updateSums();
         updateAllStatistics();
+        console.log("Ładowanie zakończone pomyślnie!");
         return true;
       } catch (e) {
         console.error("Błąd ładowania danych:", e);
+        console.error("Stack trace:", e.stack);
         return false;
       }
     }
