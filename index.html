@@ -468,8 +468,14 @@
         const content = result.files["scorecard-data.json"].content;
         
         localStorage.setItem("scorecardData", content);
-        loadState();
-        showSyncStatus('✓ Wczytano z cloud!', 'success');
+        
+        // Forsuj przeładowanie strony po wczytaniu danych
+        const loaded = loadState();
+        if (loaded) {
+          showSyncStatus('✓ Wczytano z cloud!', 'success');
+        } else {
+          showSyncStatus('Błąd wczytywania danych', 'error');
+        }
       } catch (error) {
         console.error('Sync error:', error);
         showSyncStatus('Błąd pobierania: ' + error.message, 'error');
@@ -517,10 +523,16 @@
         // Wczytaj dane
         const content = scorecardGist.files["scorecard-data.json"].content;
         localStorage.setItem("scorecardData", content);
-        loadState();
         
-        showSyncStatus('✓ Znaleziono i wczytano dane z cloud!', 'success');
-        document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${scorecardGist.id.substring(0, 8)}...`;
+        // Forsuj przeładowanie strony po wczytaniu danych
+        const loaded = loadState();
+        
+        if (loaded) {
+          showSyncStatus('✓ Znaleziono i wczytano dane z cloud!', 'success');
+          document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${scorecardGist.id.substring(0, 8)}...`;
+        } else {
+          showSyncStatus('Błąd wczytywania danych', 'error');
+        }
       } catch (error) {
         console.error('Sync error:', error);
         showSyncStatus('Błąd wyszukiwania: ' + error.message, 'error');
@@ -851,7 +863,7 @@
 
     function loadState() {
       const saved = localStorage.getItem("scorecardData");
-      if (!saved) return;
+      if (!saved) return false;
       
       try {
         const data = JSON.parse(saved);
@@ -893,8 +905,10 @@
 
         updateSums();
         updateAllStatistics();
+        return true;
       } catch (e) {
         console.error("Błąd ładowania danych:", e);
+        return false;
       }
     }
 
