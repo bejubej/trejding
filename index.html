@@ -482,62 +482,96 @@
       }
     }
 
-    async function findAndLoadGist() {
-      const token = getToken();
+async function findAndLoadGist() {
+  const token = getToken();
 
-      if (!token) {
-        showSyncStatus('Najpierw zapisz GitHub token!', 'error');
-        return;
+  if (!token) {
+    showSyncStatus('Najpierw zapisz GitHub token!', 'error');
+    return;
+  }
+
+  showSyncStatus('Szukam danych w cloud...', 'info');
+
+  try {
+    // 1) Pobierz listę gistów (meta)
+    const response = await fetch('https://api.github.com/gists', {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
       }
+    });
 
-      showSyncStatus('Szukam danych w cloud...', 'info');
-
-      try {
-        // Pobierz wszystkie gisty użytkownika
-        const response = await fetch('https://api.github.com/gists', {
-          headers: {
-            'Authorization': `token ${token}`,
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`GitHub API error: ${response.status}`);
-        }
-
-        const gists = await response.json();
-        
-        // Znajdź gist ze scorecarda
-        const scorecardGist = gists.find(g => 
-          g.description === "Trading Scorecard Data" && 
-          g.files["scorecard-data.json"]
-        );
-
-        if (!scorecardGist) {
-          showSyncStatus('Nie znaleziono danych. Najpierw zapisz dane używając "Zapisz do Cloud"', 'error');
-          return;
-        }
-
-        // Zapisz ID gista
-        localStorage.setItem('gistId', scorecardGist.id);
-        
-        // Wczytaj dane
-        const content = scorecardGist.files["scorecard-data.json"].content;
-        localStorage.setItem("scorecardData", content);
-        
-        // Forsuj przeładowanie strony po wczytaniu danych
-        const loaded = loadState();
-        
-        if (loaded) {
-          showSyncStatus('✓ Znaleziono i wczytano dane z cloud!', 'success');
-          document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${scorecardGist.id.substring(0, 8)}...`;
-        } else {
-          showSyncStatus('Błąd wczytywania danych', 'error');
-        }
-      } catch (error) {
-        console.error('Sync error:', error);
-        showSyncStatus('Błąd wyszukiwania: ' + error.message, 'error');
-      }
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
     }
+
+    const gists = await response.json();
+
+    // 2) Znajdź gist z naszym opisem/plikiem (meta)
+    const scorecardGistMeta = gists.find(g =>
+      g.description === "Trading Scorecard Data" &&
+      g.files && g.files["scorecard-data.json"]
+    );
+
+    if (!scorecardGistMeta) {
+      showSyncStatus('Nie znaleziono danych. Najpierw zapisz dane używając "Zapisz do Cloud"', 'error');
+      return;
+    }
+
+    // 3) Pobierz pełny gist (zawartość plików) — to ważne, bo lista może nie zawierać content
+    const fullResp = await fetch(`https://api.github.com/gists/${scorecardGistMeta.id}`, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (!fullResp.ok) {
+      throw new Error(`GitHub API error when fetching gist: ${fullResp.status}`);
+    }
+
+    const fullGist = await fullResp.json();
+
+    const file = fullGist.files && fullGist.files["scorecard-data.json"];
+    if (!file) {
+      showSyncStatus('W giscie nie znaleziono pliku scorecard-data.json', 'error');
+      return;
+    }
+
+    const content = file.content;
+
+    if (!content || content.trim().length === 0) {
+      showSyncStatus('Plik jest pusty — brak danych do załadowania', 'error');
+      return;
+    }
+
+    // 4) Walidacja: czy to prawidłowy JSON?
+    try {
+      JSON.parse(content);
+    } catch (e) {
+      console.error('Nieprawidłowy JSON w giscie:', e);
+      showSyncStatus('Zawartość w cloud nie jest poprawnym JSONem', 'error');
+      return;
+    }
+
+    // 5) Zapisz ID gista i zawartość bezpiecznie
+    localStorage.setItem('gistId', scorecardGistMeta.id);
+    localStorage.setItem("scorecardData", content);
+
+    // 6) Wczytaj stan do UI
+    const loaded = loadState();
+    if (loaded) {
+      showSyncStatus('✓ Znaleziono i wczytano dane z cloud!', 'success');
+      document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${scorecardGistMeta.id.substring(0, 8)}...`;
+    } else {
+      showSyncStatus('Błąd wczytywania danych po pobraniu', 'error');
+    }
+  } catch (error) {
+    console.error('Sync error:', error);
+    showSyncStatus('Błąd wyszukiwania: ' + error.message, 'error');
+  }
+}
+
 
     function toggleAutoSync() {
       const checkbox = document.getElementById('autoSync');
@@ -1062,3 +1096,4 @@
   </script>
 </body>
 </html>
+
