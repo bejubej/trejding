@@ -3,1097 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scorecard Trading</title>
+  <title>Scorecard Trading - Professional</title>
+
+  <!-- External libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px; 
-      margin: 0;
-    }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-    h1 { 
-      color: #333; 
-      text-align: center; 
-      margin-bottom: 30px;
-      font-size: 2.5em;
-    }
-    .stats-overview {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    .stat-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 2.5em;
-      font-weight: bold;
-      margin: 10px 0;
-    }
-    .stat-label {
-      font-size: 0.9em;
-      opacity: 0.9;
-    }
-    .export-btn {
-      background: #4caf50;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      margin: 10px;
-      display: inline-block;
-      transition: background 0.3s;
-    }
-    .export-btn:hover {
-      background: #45a049;
-    }
-    .reset-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      margin: 10px;
-      display: inline-block;
-      transition: background 0.3s;
-    }
-    .reset-btn:hover {
-      background: #da190b;
-    }
-    .button-container {
-      text-align: center;
-      margin: 20px 0;
-    }
-    .sync-section {
-      background: #e3f2fd;
-      padding: 20px;
-      margin: 20px 0;
-      border-radius: 8px;
-      border-left: 4px solid #2196f3;
-    }
-    .sync-section h3 {
-      margin-top: 0;
-      color: #1976d2;
-    }
-    .token-input {
-      width: 100%;
-      max-width: 500px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-family: monospace;
-      margin: 10px 0;
-    }
-    .sync-btn {
-      background: #2196f3;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      margin: 5px;
-      transition: background 0.3s;
-    }
-    .sync-btn:hover {
-      background: #1976d2;
-    }
-    .sync-btn.success {
-      background: #4caf50;
-    }
-    .sync-status {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 4px;
-      display: none;
-    }
-    .sync-status.show {
-      display: block;
-    }
-    .sync-status.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .sync-status.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .sync-status.info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
-    }
-    table { 
-      border-collapse: collapse; 
-      width: 100%; 
-      margin-bottom: 20px; 
-      background: white; 
-      table-layout: fixed;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    th, td { 
-      border: 1px solid #ddd; 
-      padding: 12px; 
-      text-align: center;
-    }
-    .day-off-btn {
-      cursor: pointer;
-      padding: 4px 10px;
-      border-radius: 4px;
-      border: 1px solid #ff9800;
-      background: white;
-      color: #ff9800;
-      font-size: 0.85em;
-      margin-left: 10px;
-      transition: all 0.3s;
-      display: inline-block;
-    }
-    .day-off-btn:hover {
-      background: #ff9800;
-      color: white;
-    }
-    .day-off-btn.active {
-      background: #ff9800;
-      color: white;
-      font-weight: bold;
-    }
-    tr.day-off {
-      background: #f5f5f5;
-      opacity: 0.6;
-    }
-    tr.day-off .toggle {
-      pointer-events: none;
-      opacity: 0.5;
-    }
-    tr.day-off .notes {
-      background: #e0e0e0;
-    }
-    th { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      font-weight: 600;
-    }
-    .day-cell {
-      background: #f8f9fa;
-      font-weight: 600;
-    }
-    .toggle { 
-      cursor: pointer; 
-      padding: 8px 16px; 
-      border-radius: 6px; 
-      border: none;
-      display: inline-block; 
-      min-width: 40px; 
-      user-select: none;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-    .on { 
-      background: #4caf50; 
-      color: white;
-      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-    }
-    .off { 
-      background: #e0e0e0; 
-      color: #666;
-    }
-    .toggle:hover {
-      transform: scale(1.1);
-    }
-    .notes { 
-      width: 100%; 
-      height: 50px; 
-      resize: vertical;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 8px;
-      font-family: inherit;
-    }
-    .date-range { 
-      margin: 30px 0 20px 0; 
-      padding: 15px; 
-      background: #f8f9fa;
-      border-left: 4px solid #667eea;
-      border-radius: 4px;
-    }
-    .date-range input {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      margin: 0 5px;
-    }
-    .week-summary {
-      margin: 20px 0;
-      padding: 15px;
-      background: #f0f4ff;
-      border-radius: 8px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-    }
-    .summary-item {
-      text-align: center;
-    }
-    .summary-value {
-      font-size: 1.8em;
-      font-weight: bold;
-      color: #667eea;
-    }
-    .summary-label {
-      font-size: 0.9em;
-      color: #666;
-      margin-top: 5px;
-    }
-    .progress-bar {
-      width: 100%;
-      height: 30px;
-      background: #e0e0e0;
-      border-radius: 15px;
-      overflow: hidden;
-      margin: 10px 0;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
-      transition: width 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-    }
-    @media (max-width: 768px) {
-      .container { padding: 15px; }
-      h1 { font-size: 1.8em; }
-      th, td { padding: 8px; font-size: 0.9em; }
-      .toggle { padding: 6px 12px; }
-    }
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container" id="content">
-    <h1>📊 Interaktywny Scorecard Trading</h1>
-    
-    <div class="sync-section">
-      <h3>☁️ Synchronizacja między urządzeniami (GitHub Gist)</h3>
-      <div>
-        <input type="password" id="githubToken" class="token-input" placeholder="Wklej swój GitHub Personal Access Token...">
-        <button class="sync-btn" onclick="saveToken()">💾 Zapisz Token</button>
-        <button class="sync-btn" onclick="removeToken()">🗑️ Usuń Token</button>
-      </div>
-      <div style="margin-top: 10px;">
-        <button class="sync-btn" onclick="syncToCloud()">☁️ Zapisz do Cloud</button>
-        <button class="sync-btn" onclick="findAndLoadGist()">🔍 Wczytaj z Cloud (auto-znajdź)</button>
-        <label style="margin-left: 15px;">
-          <input type="checkbox" id="autoSync" onchange="toggleAutoSync()"> Auto-sync co 30s
-        </label>
-      </div>
-      <div id="syncStatus" class="sync-status"></div>
-      <div id="gistInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
-      <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
-        <strong>Jak uzyskać token?</strong><br>
-        GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token<br>
-        Zaznacz tylko uprawnienie <strong>"gist"</strong>
-      </div>
-    </div>
-    
-    <div class="stats-overview" id="statsOverview"></div>
-    
+
+<div class="container">
+  <h1>📊 Scorecard Trading</h1>
+
+  <!-- Tabs -->
+  <div class="tabs" data-tabs>
+    <button class="tab active" data-tab="current">📝 Aktywny tydzień</button>
+    <button class="tab" data-tab="history">📚 Historia</button>
+    <button class="tab" data-tab="settings">⚙️ Ustawienia</button>
+  </div>
+
+  <!-- Current Week Tab -->
+  <div id="tab-current" class="tab-content active">
+    <div class="stats-overview" data-current-stats></div>
+
     <div class="button-container">
-      <button class="export-btn" onclick="exportToPDF()">📥 Eksportuj do PDF</button>
-      <button class="reset-btn" onclick="resetAll()">🔄 Reset wszystkich danych</button>
+      <button class="btn btn-warning" data-action="archive-week">📦 Archiwizuj tydzień</button>
+      <!-- <button class="btn btn-success" data-action="export-current">📥 Eksportuj do PDF</button> -->
+      <button class="btn btn-danger" data-action="reset-current">🔄 Reset tygodnia</button>
     </div>
 
-    <div id="exportContent">
-      <div id="scorecards"></div>
+    <div data-current-week></div>
+  </div>
+
+  <!-- History Tab -->
+  <div id="tab-history" class="tab-content">
+    <div class="stats-overview" data-history-stats></div>
+
+    <div class="chart-container">
+      <div class="chart-title">📈 Trend wykonania tygodniowego</div>
+      <canvas data-chart="trend"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">📊 Porównanie kategorii</div>
+      <canvas data-chart="categories"></canvas>
+    </div>
+
+    <div class="button-container">
+      <!-- <button class="btn btn-success" data-action="export-history">📥 Eksportuj historię do PDF</button> -->
+      <button class="btn btn-danger" data-action="clear-history">🗑️ Wyczyść historię</button>
+    </div>
+
+    <h2 style="margin-top: 40px;">Zarchiwizowane tygodnie</h2>
+    <div data-archive-list></div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div id="tab-settings" class="tab-content">
+
+    <!-- Weekly Goals Section -->
+    <div class="settings-section">
+      <h3>🎯 Cele tygodniowe</h3>
+      <div class="setting-item">
+        <span class="setting-label">Minimalny cel wykonania (%)</span>
+        <input type="number" class="setting-input" data-setting="weeklyGoal" min="0" max="100" value="75">
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">Cel perfekcyjnych dni</span>
+        <input type="number" class="setting-input" data-setting="perfectDaysGoal" min="0" max="5" value="2">
+      </div>
+    </div>
+
+    <!-- GitHub Sync Section -->
+    <div class="settings-section">
+      <h3>☁️ Synchronizacja GitHub Gist</h3>
+
+      <div class="setting-item">
+        <label class="setting-label">GitHub Personal Access Token</label>
+        <input type="password" class="setting-input" data-input="github-token" placeholder="ghp_xxxxxxxxxxxxx" style="width: 100%; max-width: 500px;">
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">ID Gista</label>
+        <input type="text" class="setting-input" data-input="gist-id" placeholder="np. a1b2c3d4e5f6..." style="width: 100%; max-width: 500px;">
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">
+          <input type="checkbox" data-input="auto-sync">
+          Automatyczna synchronizacja (co 5 min)
+        </label>
+      </div>
+
+      <div class="button-container">
+        <button class="btn btn-primary" data-action="save-token">💾 Zapisz Token</button>
+        <button class="btn btn-danger" data-action="remove-token">🗑️ Usuń Token</button>
+        <button class="btn btn-success" data-action="save-gist">☁️ Zapisz do chmury</button>
+        <button class="btn btn-primary" data-action="load-gist">🔍 Pobierz z chmury</button>
+      </div>
+
+      <div class="sync-status" data-sync-status></div>
+      <div data-gist-info style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
+
+      <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 6px; font-size: 0.9em;">
+        <strong>📝 Jak uzyskać token?</strong><br>
+        1. Przejdź do GitHub → Settings → Developer settings<br>
+        2. Personal access tokens → Tokens (classic) → Generate new token<br>
+        3. Zaznacz tylko uprawnienie <strong>"gist"</strong><br>
+        4. Skopiuj wygenerowany token i wklej powyżej
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="settings-section">
+      <h3>⚠️ Strefa niebezpieczna</h3>
+      <button class="btn btn-danger" data-action="reset-all">🗑️ Wyczyść WSZYSTKIE dane (tydzień + historia)</button>
     </div>
   </div>
 
-  <script>
-    const days = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"];
-    const fields = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"]; 
-    let autoSyncInterval = null;
+</div>
 
-    // GitHub Gist sync functions
-    function showSyncStatus(message, type) {
-      const status = document.getElementById('syncStatus');
-      status.textContent = message;
-      status.className = `sync-status show ${type}`;
-      setTimeout(() => {
-        status.classList.remove('show');
-      }, 5000);
-    }
+<!-- App logic -->
+<script src="app.js"></script>
 
-    function saveToken() {
-      const token = document.getElementById('githubToken').value.trim();
-      if (!token) {
-        showSyncStatus('Wpisz token!', 'error');
-        return;
-      }
-      localStorage.setItem('githubToken', token);
-      showSyncStatus('Token zapisany!', 'success');
-      document.getElementById('githubToken').value = '';
-      document.getElementById('githubToken').placeholder = "Token zapisany ✓";
-    }
-
-    function removeToken() {
-      localStorage.removeItem('githubToken');
-      localStorage.removeItem('gistId');
-      showSyncStatus('Token usunięty', 'info');
-      document.getElementById('githubToken').placeholder = "Wklej swój GitHub Personal Access Token...";
-      document.getElementById('gistInfo').textContent = '';
-    }
-
-    function getToken() {
-      return localStorage.getItem('githubToken');
-    }
-
-    function getGistId() {
-      return localStorage.getItem('gistId');
-    }
-
-    async function syncToCloud() {
-      const token = getToken();
-      if (!token) {
-        showSyncStatus('Najpierw zapisz GitHub token!', 'error');
-        return;
-      }
-
-      const data = localStorage.getItem("scorecardData");
-      if (!data) {
-        showSyncStatus('Brak danych do zapisania', 'error');
-        return;
-      }
-
-      showSyncStatus('Zapisywanie...', 'info');
-
-      const gistId = getGistId();
-      const gistData = {
-        description: "Trading Scorecard Data",
-        public: false,
-        files: {
-          "scorecard-data.json": {
-            content: data
-          }
-        }
-      };
-
-      try {
-        let response;
-        if (gistId) {
-          // Update existing gist
-          response = await fetch(`https://api.github.com/gists/${gistId}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `token ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(gistData)
-          });
-        } else {
-          // Create new gist
-          response = await fetch('https://api.github.com/gists', {
-            method: 'POST',
-            headers: {
-              'Authorization': `token ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(gistData)
-          });
-        }
-
-        if (!response.ok) {
-          throw new Error(`GitHub API error: ${response.status}`);
-        }
-
-        const result = await response.json();
-        localStorage.setItem('gistId', result.id);
-        showSyncStatus('✓ Zapisano do cloud!', 'success');
-        document.getElementById('gistInfo').textContent = `Zapisano w Gist ID: ${result.id.substring(0, 8)}...`;
-      } catch (error) {
-        console.error('Sync error:', error);
-        showSyncStatus('Błąd synchronizacji: ' + error.message, 'error');
-      }
-    }
-
-    async function syncFromCloud() {
-      const token = getToken();
-      const gistId = getGistId();
-
-      if (!token) {
-        showSyncStatus('Najpierw zapisz GitHub token!', 'error');
-        return;
-      }
-
-      if (!gistId) {
-        showSyncStatus('Nie znaleziono ID gist. Użyj "Wczytaj z Cloud (auto-znajdź)"', 'error');
-        return;
-      }
-
-      showSyncStatus('Pobieranie...', 'info');
-
-      try {
-        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-          headers: {
-            'Authorization': `token ${token}`,
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`GitHub API error: ${response.status}`);
-        }
-
-        const result = await response.json();
-        const content = result.files["scorecard-data.json"].content;
-        
-        localStorage.setItem("scorecardData", content);
-        
-        // Forsuj przeładowanie strony po wczytaniu danych
-        const loaded = loadState();
-        if (loaded) {
-          showSyncStatus('✓ Wczytano z cloud!', 'success');
-        } else {
-          showSyncStatus('Błąd wczytywania danych', 'error');
-        }
-      } catch (error) {
-        console.error('Sync error:', error);
-        showSyncStatus('Błąd pobierania: ' + error.message, 'error');
-      }
-    }
-
-async function findAndLoadGist() {
-  const token = getToken();
-
-  if (!token) {
-    showSyncStatus('Najpierw zapisz GitHub token!', 'error');
-    return;
-  }
-
-  showSyncStatus('Szukam danych w cloud...', 'info');
-
-  try {
-    // 1) Pobierz listę gistów (meta)
-    const response = await fetch('https://api.github.com/gists', {
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const gists = await response.json();
-
-    // 2) Znajdź gist z naszym opisem/plikiem (meta)
-    const scorecardGistMeta = gists.find(g =>
-      g.description === "Trading Scorecard Data" &&
-      g.files && g.files["scorecard-data.json"]
-    );
-
-    if (!scorecardGistMeta) {
-      showSyncStatus('Nie znaleziono danych. Najpierw zapisz dane używając "Zapisz do Cloud"', 'error');
-      return;
-    }
-
-    // 3) Pobierz pełny gist (zawartość plików) — to ważne, bo lista może nie zawierać content
-    const fullResp = await fetch(`https://api.github.com/gists/${scorecardGistMeta.id}`, {
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-
-    if (!fullResp.ok) {
-      throw new Error(`GitHub API error when fetching gist: ${fullResp.status}`);
-    }
-
-    const fullGist = await fullResp.json();
-
-    const file = fullGist.files && fullGist.files["scorecard-data.json"];
-    if (!file) {
-      showSyncStatus('W giscie nie znaleziono pliku scorecard-data.json', 'error');
-      return;
-    }
-
-    const content = file.content;
-
-    if (!content || content.trim().length === 0) {
-      showSyncStatus('Plik jest pusty — brak danych do załadowania', 'error');
-      return;
-    }
-
-    // 4) Walidacja: czy to prawidłowy JSON?
-    try {
-      JSON.parse(content);
-    } catch (e) {
-      console.error('Nieprawidłowy JSON w giscie:', e);
-      showSyncStatus('Zawartość w cloud nie jest poprawnym JSONem', 'error');
-      return;
-    }
-
-    // 5) Zapisz ID gista i zawartość bezpiecznie
-    localStorage.setItem('gistId', scorecardGistMeta.id);
-    localStorage.setItem("scorecardData", content);
-
-    // 6) Wczytaj stan do UI
-    const loaded = loadState();
-    if (loaded) {
-      showSyncStatus('✓ Znaleziono i wczytano dane z cloud!', 'success');
-      document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${scorecardGistMeta.id.substring(0, 8)}...`;
-    } else {
-      showSyncStatus('Błąd wczytywania danych po pobraniu', 'error');
-    }
-  } catch (error) {
-    console.error('Sync error:', error);
-    showSyncStatus('Błąd wyszukiwania: ' + error.message, 'error');
-  }
-}
-
-
-    function toggleAutoSync() {
-      const checkbox = document.getElementById('autoSync');
-      if (checkbox.checked) {
-        autoSyncInterval = setInterval(() => {
-          syncToCloud();
-        }, 30000); // 30 seconds
-        showSyncStatus('Auto-sync włączony (co 30s)', 'success');
-      } else {
-        if (autoSyncInterval) {
-          clearInterval(autoSyncInterval);
-          autoSyncInterval = null;
-        }
-        showSyncStatus('Auto-sync wyłączony', 'info');
-      }
-    } 
-
-    function createToggle(initial = 0, weekIndex, dayIndex, fieldIndex) {
-      const el = document.createElement("div");
-      el.className = "toggle " + (initial ? "on" : "off");
-      el.textContent = initial;
-      el.onclick = () => {
-        const value = el.textContent === "1" ? 0 : 1;
-        el.textContent = value;
-        el.className = "toggle " + (value ? "on" : "off");
-        saveState();
-        updateSums();
-        updateAllStatistics();
-      };
-      return el;
-    }
-
-    function buildTable(index) {
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
-
-      const headRow = document.createElement("tr");
-      const thDay = document.createElement("th");
-      thDay.textContent = "Dzień";
-      headRow.appendChild(thDay);
-
-      fields.forEach(f => {
-        const th = document.createElement("th"); 
-        th.textContent = f; 
-        headRow.appendChild(th);
-      });
-
-      const thSum = document.createElement("th"); 
-      thSum.textContent = "Suma"; 
-      headRow.appendChild(thSum);
-      
-      const thNotes = document.createElement("th"); 
-      thNotes.textContent = "Notatki"; 
-      headRow.appendChild(thNotes);
-
-      thead.appendChild(headRow);
-      table.appendChild(thead);
-
-      days.forEach((day, rowIndex) => {
-        const tr = document.createElement("tr");
-        tr.dataset.weekIndex = index;
-        tr.dataset.dayIndex = rowIndex;
-        
-        const dayCell = document.createElement("td"); 
-        dayCell.className = "day-cell";
-        
-        const dayText = document.createTextNode(day + " ");
-        dayCell.appendChild(dayText);
-        
-        const dayOffBtn = document.createElement("span");
-        dayOffBtn.className = "day-off-btn";
-        dayOffBtn.textContent = "🚫 Dzień wolny";
-        dayOffBtn.onclick = function() {
-          toggleDayOff(index, rowIndex);
-        };
-        dayCell.appendChild(dayOffBtn);
-        
-        tr.appendChild(dayCell);
-
-        fields.forEach((_, colIndex) => {
-          const td = document.createElement("td");
-          td.appendChild(createToggle(0, index, rowIndex, colIndex));
-          tr.appendChild(td);
-        });
-
-        const sumCell = document.createElement("td"); 
-        sumCell.className = "sumCell"; 
-        sumCell.textContent = "0/5";
-        tr.appendChild(sumCell);
-
-        const notesCell = document.createElement("td");
-        const notes = document.createElement("textarea");
-        notes.className = "notes";
-        notes.placeholder = "Dodaj notatkę...";
-        notes.oninput = () => saveState();
-        notesCell.appendChild(notes);
-        tr.appendChild(notesCell);
-
-        tbody.appendChild(tr);
-      });
-
-      table.appendChild(tbody);
-      return table;
-    }
-
-    function updateSums() {
-      document.querySelectorAll("tbody tr").forEach(row => {
-        if (row.classList.contains('day-off')) {
-          const sumCell = row.querySelector(".sumCell");
-          sumCell.textContent = "—";
-          sumCell.style.background = "#9e9e9e";
-          sumCell.style.color = "white";
-          return;
-        }
-        
-        const toggles = row.querySelectorAll(".toggle");
-        let sum = 0;
-        toggles.forEach(t => sum += Number(t.textContent));
-        const sumCell = row.querySelector(".sumCell");
-        sumCell.textContent = `${sum}/${fields.length}`;
-        
-        // Kolorowanie w zależności od wyniku
-        if (sum === fields.length) {
-          sumCell.style.background = "#4caf50";
-          sumCell.style.color = "white";
-          sumCell.style.fontWeight = "bold";
-        } else if (sum >= fields.length * 0.6) {
-          sumCell.style.background = "#fff3cd";
-          sumCell.style.color = "#856404";
-        } else {
-          sumCell.style.background = "#f8d7da";
-          sumCell.style.color = "#721c24";
-        }
-      });
-    }
-
-    function calculateWeekStats(weekIndex) {
-      const tables = document.querySelectorAll("#scorecards table");
-      if (!tables[weekIndex]) {
-        return {
-          totalChecked: 0,
-          totalPossible: days.length * fields.length,
-          percentage: 0,
-          perfectDays: 0,
-          activeDays: days.length
-        };
-      }
-      
-      const table = tables[weekIndex];
-      const rows = table.querySelectorAll("tbody tr");
-      
-      let totalChecked = 0;
-      let activeDays = 0;
-      let perfectDays = 0;
-      
-      rows.forEach(row => {
-        // Pomijaj dni wolne
-        if (row.classList.contains('day-off')) {
-          return;
-        }
-        
-        activeDays++;
-        const toggles = row.querySelectorAll(".toggle");
-        let daySum = 0;
-        toggles.forEach(t => {
-          const val = Number(t.textContent);
-          totalChecked += val;
-          daySum += val;
-        });
-        if (daySum === fields.length) perfectDays++;
-      });
-      
-      const totalPossible = activeDays * fields.length;
-      const percentage = totalPossible > 0 ? ((totalChecked / totalPossible) * 100).toFixed(1) : 0;
-      
-      return {
-        totalChecked,
-        totalPossible,
-        percentage,
-        perfectDays,
-        activeDays
-      };
-    }
-
-    function createWeekSummary(weekIndex) {
-      const stats = calculateWeekStats(weekIndex);
-      const summary = document.createElement("div");
-      summary.className = "week-summary";
-      
-      summary.innerHTML = `
-        <div class="summary-item">
-          <div class="summary-value">${stats.percentage}%</div>
-          <div class="summary-label">Wykonanie</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-value">${stats.totalChecked}/${stats.totalPossible}</div>
-          <div class="summary-label">Punkty</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-value">${stats.perfectDays}/5</div>
-          <div class="summary-label">Perfekcyjne dni</div>
-        </div>
-      `;
-      
-      const progressBar = document.createElement("div");
-      progressBar.className = "progress-bar";
-      progressBar.innerHTML = `
-        <div class="progress-fill" style="width: ${stats.percentage}%">
-          ${stats.percentage}%
-        </div>
-      `;
-      summary.appendChild(progressBar);
-      
-      return summary;
-    }
-
-    function updateAllStatistics() {
-      // Aktualizuj podsumowania tygodniowe
-      const summaries = document.querySelectorAll(".week-summary");
-      summaries.forEach((summary, index) => {
-        const stats = calculateWeekStats(index);
-        summary.innerHTML = `
-          <div class="summary-item">
-            <div class="summary-value">${stats.percentage}%</div>
-            <div class="summary-label">Wykonanie</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value">${stats.totalChecked}/${stats.totalPossible}</div>
-            <div class="summary-label">Punkty</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value">${stats.perfectDays}/${stats.activeDays}</div>
-            <div class="summary-label">Perfekcyjne dni</div>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${stats.percentage}%">
-              ${stats.percentage}%
-            </div>
-          </div>
-        `;
-      });
-      
-      // Aktualizuj ogólne statystyki
-      updateOverallStats();
-    }
-
-    function updateOverallStats() {
-      let totalChecked = 0;
-      let totalPossible = 0;
-      let totalPerfectDays = 0;
-      let weeksWithData = 0;
-      
-      for (let i = 0; i < 4; i++) {
-        const stats = calculateWeekStats(i);
-        totalChecked += stats.totalChecked;
-        totalPossible += stats.totalPossible;
-        totalPerfectDays += stats.perfectDays;
-        if (stats.totalChecked > 0) weeksWithData++;
-      }
-      
-      const overallPercentage = totalPossible > 0 ? ((totalChecked / totalPossible) * 100).toFixed(1) : 0;
-      const avgPerWeek = weeksWithData > 0 ? (totalChecked / weeksWithData).toFixed(1) : 0;
-      
-      const statsOverview = document.getElementById("statsOverview");
-      statsOverview.innerHTML = `
-        <div class="stat-card">
-          <div class="stat-label">Ogólne wykonanie</div>
-          <div class="stat-value">${overallPercentage}%</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Łącznie punktów</div>
-          <div class="stat-value">${totalChecked}/${totalPossible}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Perfekcyjne dni</div>
-          <div class="stat-value">${totalPerfectDays}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Średnia/tydzień</div>
-          <div class="stat-value">${avgPerWeek}</div>
-        </div>
-      `;
-    }
-
-    function saveState() {
-      const data = {
-        scorecards: [],
-        dateRanges: [],
-        daysOff: []
-      };
-      
-      document.querySelectorAll("#scorecards > div").forEach((section, sIndex) => {
-        // Zapisz daty
-        const dateInputs = section.querySelectorAll("input[type='date']");
-        data.dateRanges.push({
-          start: dateInputs[0].value,
-          end: dateInputs[1].value
-        });
-        
-        // Zapisz dni wolne
-        const table = section.querySelector("table");
-        const rows = table.querySelectorAll("tbody tr");
-        const weekDaysOff = [];
-        
-        rows.forEach((row, rIndex) => {
-          weekDaysOff.push(row.classList.contains('day-off'));
-        });
-        data.daysOff.push(weekDaysOff);
-        
-        // Zapisz dane tabeli
-        const rowData = [];
-        rows.forEach((row) => {
-          const toggles = [...row.querySelectorAll(".toggle")].map(t => t.textContent);
-          const note = row.querySelector("textarea").value;
-          rowData.push({ toggles, note });
-        });
-        data.scorecards.push(rowData);
-      });
-      
-      localStorage.setItem("scorecardData", JSON.stringify(data));
-    }
-
-    function loadState() {
-      const saved = localStorage.getItem("scorecardData");
-      if (!saved) {
-        console.log("Brak danych w localStorage");
-        return false;
-      }
-      
-      try {
-        console.log("Ładowanie danych z localStorage...");
-        const data = JSON.parse(saved);
-        console.log("Dane sparsowane:", data);
-
-        const sections = document.querySelectorAll("#scorecards > div");
-        console.log("Znaleziono sekcji:", sections.length);
-
-        sections.forEach((section, sIndex) => {
-          console.log(`Ładowanie sekcji ${sIndex}...`);
-          
-          // Załaduj daty
-          if (data.dateRanges && data.dateRanges[sIndex]) {
-            const dateInputs = section.querySelectorAll("input[type='date']");
-            if (dateInputs.length >= 2) {
-              dateInputs[0].value = data.dateRanges[sIndex].start || "";
-              dateInputs[1].value = data.dateRanges[sIndex].end || "";
-              console.log(`Daty załadowane: ${dateInputs[0].value} - ${dateInputs[1].value}`);
-            }
-          }
-          
-          // Załaduj dane tabeli
-          const table = section.querySelector("table");
-          if (!table) {
-            console.error(`Nie znaleziono tabeli w sekcji ${sIndex}`);
-            return;
-          }
-          
-          const rows = table.querySelectorAll("tbody tr");
-          console.log(`Znaleziono wierszy: ${rows.length}`);
-
-          rows.forEach((row, rIndex) => {
-            // Załaduj status dnia wolnego
-            if (data.daysOff && data.daysOff[sIndex] && data.daysOff[sIndex][rIndex]) {
-              row.classList.add('day-off');
-              const btn = row.querySelector('.day-off-btn');
-              if (btn) btn.classList.add('active');
-              console.log(`Dzień ${rIndex} oznaczony jako wolny`);
-            }
-            
-            if (data.scorecards && data.scorecards[sIndex] && data.scorecards[sIndex][rIndex]) {
-              const savedRow = data.scorecards[sIndex][rIndex];
-              const toggles = row.querySelectorAll(".toggle");
-
-              toggles.forEach((t, cIndex) => {
-                if (savedRow.toggles && savedRow.toggles[cIndex] !== undefined) {
-                  const val = savedRow.toggles[cIndex];
-                  t.textContent = val;
-                  t.className = "toggle " + (val === "1" ? "on" : "off");
-                }
-              });
-
-              const textarea = row.querySelector("textarea");
-              if (textarea && savedRow.note !== undefined) {
-                textarea.value = savedRow.note || "";
-              }
-              console.log(`Wiersz ${rIndex} załadowany:`, savedRow.toggles);
-            }
-          });
-        });
-
-        console.log("Aktualizacja sum i statystyk...");
-        updateSums();
-        updateAllStatistics();
-        console.log("Ładowanie zakończone pomyślnie!");
-        return true;
-      } catch (e) {
-        console.error("Błąd ładowania danych:", e);
-        console.error("Stack trace:", e.stack);
-        return false;
-      }
-    }
-
-    function exportToPDF() {
-      const element = document.getElementById("exportContent");
-      const opt = {
-        margin: 10,
-        filename: `trading-scorecard-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(element).save();
-    }
-
-    function resetAll() {
-      if (!confirm('Czy na pewno chcesz wyczyścić WSZYSTKIE dane? Ta operacja jest nieodwracalna!')) {
-        return;
-      }
-      
-      // Wyczyść localStorage
-      localStorage.removeItem("scorecardData");
-      
-      // Zresetuj wszystkie toggles
-      document.querySelectorAll(".toggle").forEach(toggle => {
-        toggle.textContent = "0";
-        toggle.className = "toggle off";
-      });
-      
-      // Wyczyść wszystkie notatki
-      document.querySelectorAll(".notes").forEach(note => {
-        note.value = "";
-      });
-      
-      // Wyczyść wszystkie daty
-      document.querySelectorAll("input[type='date']").forEach(input => {
-        input.value = "";
-      });
-      
-      // Usuń wszystkie dni wolne
-      document.querySelectorAll("tbody tr").forEach(row => {
-        row.classList.remove('day-off');
-        const btn = row.querySelector('.day-off-btn');
-        if (btn) btn.classList.remove('active');
-      });
-      
-      // Zaktualizuj sumy i statystyki
-      updateSums();
-      updateAllStatistics();
-      
-      alert('Wszystkie dane zostały wyczyszczone!');
-    }
-
-    function toggleDayOff(weekIndex, dayIndex) {
-      const tables = document.querySelectorAll("#scorecards table");
-      const table = tables[weekIndex];
-      const row = table.querySelectorAll("tbody tr")[dayIndex];
-      const btn = row.querySelector('.day-off-btn');
-      
-      if (row.classList.contains('day-off')) {
-        // Włącz dzień
-        row.classList.remove('day-off');
-        btn.classList.remove('active');
-      } else {
-        // Wyłącz dzień
-        row.classList.add('day-off');
-        btn.classList.add('active');
-      }
-      
-      saveState();
-      updateSums();
-      updateAllStatistics();
-    }
-
-    // Inicjalizacja
-    const container = document.getElementById("scorecards");
-
-    for (let i = 1; i <= 4; i++) {
-      const section = document.createElement("div");
-      
-      const dateBox = document.createElement("div");
-      dateBox.className = "date-range";
-      dateBox.innerHTML = `
-        <strong>Tydzień ${i} - Zakres dat:</strong> 
-        <input type="date" onchange="saveState()"> — 
-        <input type="date" onchange="saveState()">
-      `;
-
-      section.appendChild(dateBox);
-      section.appendChild(buildTable(i - 1));
-      section.appendChild(createWeekSummary(i - 1));
-      
-      container.appendChild(section);
-    }
-
-    loadState();
-    updateAllStatistics();
-    
-    // Load token field if exists
-    if (getToken()) {
-      document.getElementById('githubToken').placeholder = "Token zapisany ✓";
-    }
-    
-    // Show gist info if exists
-    const gistId = getGistId();
-    if (gistId) {
-      document.getElementById('gistInfo').textContent = `Połączono z Gist ID: ${gistId.substring(0, 8)}...`;
-    }
-    
-    // Check for auto-sync preference
-    const autoSyncPref = localStorage.getItem('autoSyncEnabled');
-    if (autoSyncPref === 'true') {
-      document.getElementById('autoSync').checked = true;
-      toggleAutoSync();
-    }
-    
-    // Save auto-sync preference
-    document.getElementById('autoSync').addEventListener('change', function() {
-      localStorage.setItem('autoSyncEnabled', this.checked);
-    });
-  </script>
 </body>
 </html>
-
