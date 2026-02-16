@@ -553,6 +553,34 @@ tr.day-off .notes {
     transform: scale(1.1);
 }
 
+.archive-profit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.archive-profit-input {
+    width: 100px;
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.9em;
+    color: #2d3748;
+    background: white;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.archive-profit-input:focus {
+    outline: none;
+    border-color: #2f855a;
+    box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.1);
+}
+
+.archive-profit-input::placeholder {
+    color: #cbd5e0;
+}
+
 .archive-content {
     display: none;
     padding: 24px;
@@ -787,6 +815,11 @@ tr.day-off .notes {
         flex-direction: column;
         gap: 5px;
         align-items: flex-start;
+    }
+
+    .archive-profit-input {
+        width: 80px;
+        font-size: 0.85em;
     }
 
     .stats-overview {
