@@ -345,7 +345,7 @@
             profitInput.style.width = '100px';
 
             const profitCurrency = DOM.create('span');
-            profitCurrency.textContent = ' R';
+            profitCurrency.textContent = ' PLN';
             profitCurrency.style.color = '#718096';
             profitCurrency.style.fontSize = '0.9em';
 
@@ -719,7 +719,7 @@
             }
 
             // Prompt for profit
-            const profitInput = prompt('Podaj zysk/stratę dla tego tygodnia (w R):\n\nMożesz pominąć (kliknij OK bez wpisywania)', '');
+            const profitInput = prompt('Podaj zysk/stratę dla tego tygodnia (w PLN/USD/etc):\n\nPrzykład: 1500 lub -300\nMożesz pominąć (kliknij OK bez wpisywania)', '');
             const profit = profitInput !== null && profitInput.trim() !== '' ? parseFloat(profitInput.trim()) : null;
 
             const stats = Calc.weekStats(weekData);
@@ -791,18 +791,6 @@
             Storage.set(STORAGE_KEYS.HISTORY, history);
 
             // Update chart only
-            Charts.render();
-        },
-
-        updateProfit(index, profit) {
-            const history = this.get();
-
-            if (!history[index]) return;
-
-            history[index].profit = profit;
-            Storage.set(STORAGE_KEYS.HISTORY, history);
-
-            // Update chart without full re-render
             Charts.render();
         },
 
@@ -900,7 +888,7 @@
                         yAxisID: 'y-percentage'
                     },
                     {
-                        label: 'Zysk (R)',
+                        label: 'Zysk (PLN)',
                         data: history.map(w => parseFloat(w.profit) || 0),
                         borderColor: '#2f855a',
                         backgroundColor: 'rgba(47, 133, 90, 0.1)',
@@ -948,11 +936,11 @@
                             position: 'right',
                             beginAtZero: true,
                             ticks: {
-                                callback: value => value + ' R'
+                                callback: value => value + ' PLN'
                             },
                             title: {
                                 display: true,
-                                text: 'Zysk (R)'
+                                text: 'Zysk (PLN)'
                             },
                             grid: {
                                 drawOnChartArea: false
