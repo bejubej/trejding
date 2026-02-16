@@ -329,6 +329,30 @@
             const stat3 = DOM.create('div', 'archive-stat');
             stat3.innerHTML = `Perfekcyjne: <strong>${week.stats.perfectDays}/${week.stats.activeDays}</strong>`;
 
+            // Profit input
+            const profitContainer = DOM.create('div', 'archive-profit');
+            const profitLabel = DOM.create('span');
+            profitLabel.textContent = 'Zysk: ';
+            profitLabel.style.color = '#718096';
+            profitLabel.style.fontSize = '0.9em';
+
+            const profitInput = DOM.create('input', 'archive-profit-input', {
+                type: 'number',
+                placeholder: '0',
+                data: { action: 'update-profit', index: index }
+            });
+            profitInput.value = week.profit || '';
+            profitInput.style.width = '100px';
+
+            const profitCurrency = DOM.create('span');
+            profitCurrency.textContent = ' R';
+            profitCurrency.style.color = '#718096';
+            profitCurrency.style.fontSize = '0.9em';
+
+            profitContainer.appendChild(profitLabel);
+            profitContainer.appendChild(profitInput);
+            profitContainer.appendChild(profitCurrency);
+
             const deleteBtn = DOM.create('button', 'archive-delete-btn', {
                 data: { action: 'delete-archive', index: index }
             });
@@ -343,6 +367,7 @@
             headerRight.appendChild(stat1);
             headerRight.appendChild(stat2);
             headerRight.appendChild(stat3);
+            headerRight.appendChild(profitContainer);
             headerRight.appendChild(deleteBtn);
             headerRight.appendChild(icon);
 
@@ -693,12 +718,17 @@
                 return;
             }
 
+            // Prompt for profit
+            const profitInput = prompt('Podaj zysk/stratę dla tego tygodnia (w R):\n\nMożesz pominąć (kliknij OK bez wpisywania)', '');
+            const profit = profitInput !== null && profitInput.trim() !== '' ? parseFloat(profitInput.trim()) : null;
+
             const stats = Calc.weekStats(weekData);
 
             const archivedWeek = {
                 ...weekData,
                 archivedAt: new Date().toISOString(),
-                stats: stats
+                stats: stats,
+                profit: profit
             };
 
             const history = History.get();
@@ -707,7 +737,8 @@
 
             this.reset();
 
-            alert(`✅ Tydzień zarchiwizowany!\n\nWykonanie: ${stats.percentage}%\nPerfekcyjne dni: ${stats.perfectDays}/${stats.activeDays}`);
+            const profitStr = profit !== null ? `\nZysk: ${profit > 0 ? '+' : ''}${profit}` : '';
+            alert(`✅ Tydzień zarchiwizowany!\n\nWykonanie: ${stats.percentage}%\nPerfekcyjne dni: ${stats.perfectDays}/${stats.activeDays}${profitStr}`);
         }
     };
 
@@ -749,6 +780,29 @@
 
             this.render();
             this.updateStats();
+            Charts.render();
+        },
+
+        updateProfit(index, value) {
+            const history = this.get();
+            if (!history[index]) return;
+
+            history[index].profit = value;
+            Storage.set(STORAGE_KEYS.HISTORY, history);
+
+            // Update chart only
+            Charts.render();
+        },
+
+        updateProfit(index, profit) {
+            const history = this.get();
+
+            if (!history[index]) return;
+
+            history[index].profit = profit;
+            Storage.set(STORAGE_KEYS.HISTORY, history);
+
+            // Update chart without full re-render
             Charts.render();
         },
 
@@ -835,14 +889,27 @@
                     const start = new Date(w.dateRange.start).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
                     return `Tydz. ${i + 1}\n${start}`;
                 }),
-                datasets: [{
-                    label: 'Wykonanie (%)',
-                    data: history.map(w => parseFloat(w.stats.percentage)),
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
+                datasets: [
+                    {
+                        label: 'Wykonanie (%)',
+                        data: history.map(w => parseFloat(w.stats.percentage)),
+                        borderColor: '#2b6cb0',
+                        backgroundColor: 'rgba(43, 108, 176, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y-percentage'
+                    },
+                    {
+                        label: 'Zysk (R)',
+                        data: history.map(w => parseFloat(w.profit) || 0),
+                        borderColor: '#2f855a',
+                        backgroundColor: 'rgba(47, 133, 90, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        yAxisID: 'y-profit',
+                        borderWidth: 2
+                    }
+                ]
             };
 
             if (state.charts.trend) state.charts.trend.destroy();
@@ -852,15 +919,43 @@
                 data: trendData,
                 options: {
                     responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
-                        legend: { display: false }
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
                     },
                     scales: {
-                        y: {
+                        'y-percentage': {
+                            type: 'linear',
+                            position: 'left',
                             beginAtZero: true,
                             max: 100,
                             ticks: {
                                 callback: value => value + '%'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Wykonanie (%)'
+                            }
+                        },
+                        'y-profit': {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => value + ' R'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Zysk (R)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
                             }
                         }
                     }
@@ -1347,6 +1442,10 @@
                 Handlers.dateChange();
             } else if (target.dataset.setting) {
                 Handlers.settingChange();
+            } else if (target.dataset.action === 'update-profit') {
+                const index = parseInt(target.dataset.index);
+                const value = target.value;
+                History.updateProfit(index, value);
             }
         });
 
