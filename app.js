@@ -9,11 +9,11 @@
   const FIELDS = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"];
 
   const FIELD_DESCRIPTIONS = {
-    "AlertMode": "to jest opis AlertMode",
-    "Limit": "to jest opis Limit",
-    "Aligned": "to jest opis Aligned",
-    "Reset 5min": "to jest opis Reset 5min",
-    "Process/notPnL": "to jest opis Process/notPnL"
+    "AlertMode": "Otwieranie wykresu tylko po alercie",
+    "Limit": "Max 2L z rzędu",
+    "Aligned": "Zgodnie z setupem",
+    "Reset 5min": "Gdy niepewność - 5minut przerwa",
+    "Process/notPnL": "Nie ponawianie setupu, doscy szeroki SL, nie ustawianie BE z reki"
   };
 
   const STORAGE_KEYS = {
