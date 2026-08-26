@@ -8,6 +8,14 @@
   const DAYS = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"];
   const FIELDS = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"];
 
+  const FIELD_DESCRIPTIONS = {
+    "AlertMode": "to jest opis AlertMode",
+    "Limit": "to jest opis Limit",
+    "Aligned": "to jest opis Aligned",
+    "Reset 5min": "to jest opis Reset 5min",
+    "Process/notPnL": "to jest opis Process/notPnL"
+  };
+
   const STORAGE_KEYS = {
     CURRENT_WEEK: 'currentWeekData',
     HISTORY: 'weekHistory',
@@ -195,6 +203,29 @@
       return DOM.create('input', '', { type: 'date', data: { input: 'date' } });
     },
 
+    descriptionRow(includeSumAndNotes = true) {
+      const tr = DOM.create('tr', 'field-description-row');
+
+      // Empty cell under "Dzień"
+      const dayCell = DOM.create('td', 'field-description-daycell');
+      tr.appendChild(dayCell);
+
+      FIELDS.forEach(field => {
+        const td = DOM.create('td', 'field-description-cell');
+        td.textContent = FIELD_DESCRIPTIONS[field] || '';
+        tr.appendChild(td);
+      });
+
+      if (includeSumAndNotes) {
+        // Empty cell under "Suma"
+        tr.appendChild(DOM.create('td', 'field-description-daycell'));
+        // Empty cell under "Notatki"
+        tr.appendChild(DOM.create('td', 'field-description-daycell'));
+      }
+
+      return tr;
+    },
+
     tableRow(dayIndex, dayName, toggleValues = [], note = '', isDayOff = false) {
       const tr = DOM.create('tr', isDayOff ? 'day-off' : '', {
         data: { dayIndex: dayIndex }
@@ -253,6 +284,7 @@
       headRow.appendChild(thNotes);
 
       thead.appendChild(headRow);
+      thead.appendChild(Templates.descriptionRow(true));
       table.appendChild(thead);
 
       // Body
@@ -412,6 +444,7 @@
       headRow.appendChild(thNotes);
 
       thead.appendChild(headRow);
+      thead.appendChild(Templates.descriptionRow(true));
       table.appendChild(thead);
 
       // Body
@@ -1335,11 +1368,13 @@
       Settings.save();
     },
 
-    switchTab(tabName) {
+    switchTab(tabName, clickedTabEl) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-      event.target.classList.add('active');
+      if (clickedTabEl) {
+        clickedTabEl.classList.add('active');
+      }
       document.getElementById(`tab-${tabName}`).classList.add('active');
 
       state.currentTab = tabName;
@@ -1416,7 +1451,7 @@
     // Tab switching
     state.dom.tabs.addEventListener('click', (e) => {
       if (e.target.dataset.tab) {
-        Handlers.switchTab(e.target.dataset.tab);
+        Handlers.switchTab(e.target.dataset.tab, e.target);
       }
     });
 
@@ -1489,4 +1524,3 @@
   }
 
 })();
-
