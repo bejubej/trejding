@@ -13,7 +13,7 @@
     "Limit": "Max 2L z rzędu",
     "Aligned": "Zgodnie z setupem",
     "Reset 5min": "Gdy niepewność - 5minut przerwa",
-    "Process/notPnL": "Nie ponawianie setupu, doscy szeroki SL, nie ustawianie BE z reki"
+    "Process/notPnL": "Nie ponawianie setupu, doscy szeroki SL, nie ustawianie BE z reki, low hanging fruit"
   };
 
   const STORAGE_KEYS = {
