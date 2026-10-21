@@ -99,12 +99,6 @@
       el.textContent = '🚫 Dzień wolny';
       return el;
     },
-    notes(value = '', readonly = false) {
-      const el = DOM.create('textarea', `notes ${readonly ? 'readonly' : ''}`, { placeholder: readonly ? '' : 'Dodaj notatkę...' });
-      el.value = value;
-      if (readonly) el.readOnly = true;
-      return el;
-    },
     dateInput() {
       return DOM.create('input', '', { type: 'date', data: { input: 'date' } });
     },
@@ -117,10 +111,9 @@
         tr.appendChild(td);
       });
       tr.appendChild(DOM.create('td', 'field-description-daycell'));
-      tr.appendChild(DOM.create('td', 'field-description-daycell'));
       return tr;
     },
-    tableRow(dayIndex, dayName, toggleValues = [], note = '', isDayOff = false) {
+    tableRow(dayIndex, dayName, toggleValues = [], isDayOff = false) {
       const tr = DOM.create('tr', isDayOff ? 'day-off' : '', { data: { dayIndex: dayIndex } });
 
       const dayCell = DOM.create('td', 'day-cell');
@@ -138,10 +131,6 @@
       const sumCell = DOM.create('td', 'sumCell');
       sumCell.textContent = '0/5';
       tr.appendChild(sumCell);
-
-      const notesCell = DOM.create('td');
-      notesCell.appendChild(Templates.notes(note));
-      tr.appendChild(notesCell);
 
       return tr;
     },
@@ -165,27 +154,21 @@
       thSum.textContent = 'Suma';
       headRow.appendChild(thSum);
 
-      const thNotes = DOM.create('th');
-      thNotes.textContent = 'Notatki';
-      headRow.appendChild(thNotes);
-
       thead.appendChild(headRow);
       thead.appendChild(Templates.descriptionRow());
       table.appendChild(thead);
 
       DAYS.forEach((day, index) => {
         let toggles = [];
-        let note = '';
         let isDayOff = false;
 
         if (weekData && weekData.days && weekData.days[index]) {
           const dayData = weekData.days[index];
           toggles = dayData.toggles || [];
-          note = dayData.note || '';
           isDayOff = dayData.isDayOff || false;
         }
 
-        tbody.appendChild(Templates.tableRow(index, day, toggles, note, isDayOff));
+        tbody.appendChild(Templates.tableRow(index, day, toggles, isDayOff));
       });
 
       table.appendChild(tbody);
@@ -283,10 +266,6 @@
       thSum.textContent = 'Suma';
       headRow.appendChild(thSum);
 
-      const thNotes = DOM.create('th');
-      thNotes.textContent = 'Notatki';
-      headRow.appendChild(thNotes);
-
       thead.appendChild(headRow);
       thead.appendChild(Templates.descriptionRow());
       table.appendChild(thead);
@@ -323,10 +302,6 @@
           else sumCell.classList.add('sum-good');
         }
         tr.appendChild(sumCell);
-
-        const notesCell = DOM.create('td');
-        notesCell.appendChild(Templates.notes(day.note || '', true));
-        tr.appendChild(notesCell);
 
         tbody.appendChild(tr);
       });
@@ -397,10 +372,8 @@
 
       rows.forEach(row => {
         const toggles = Array.from(row.querySelectorAll('[data-action="toggle"]')).map(t => t.dataset.value);
-        const noteEl = row.querySelector('.notes');
-        const note = noteEl ? noteEl.value : '';
         const isDayOff = row.classList.contains('day-off');
-        weekData.days.push({ toggles, note, isDayOff });
+        weekData.days.push({ toggles, isDayOff });
       });
 
       Storage.set(STORAGE_KEYS.CURRENT_WEEK, weekData);
@@ -436,9 +409,6 @@
               toggle.className = `toggle ${val === '1' ? 'on' : 'off'}`;
             }
           });
-
-          const textarea = row.querySelector('.notes');
-          if (textarea) textarea.value = day.note || '';
         }
       });
 
@@ -651,7 +621,6 @@
       if (state.charts.trend) state.charts.trend.destroy();
       if (!state.dom.trendChart) return;
 
-      // Wyliczanie skumulowanego zysku
       let cumulative = 0;
       const cumulativeProfit = history.map(w => {
         cumulative += parseFloat(w.profit) || 0;
