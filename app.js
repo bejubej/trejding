@@ -9,7 +9,7 @@
     "Limit": "Max 2L z rzędu",
     "Aligned": "Zgodnie z setupem",
     "Reset 5min": "Gdy niepewność - 5minut przerwa",
-    "Process/notPnL": "Nie ponawianie setupu, doscy szeroki SL, nie ustawianie BE z reki, low hanging fruit"
+    "Process/notPnL": "Nie ponawianie setupu, szeroki SL, bez BE z ręki, low hanging fruit"
   };
 
   const STORAGE_KEYS = {
@@ -36,7 +36,6 @@
       trendChart: document.querySelector('[data-chart="trend"]'),
       categoriesChart: document.querySelector('[data-chart="categories"]'),
       settingInputs: document.querySelectorAll('[data-setting]'),
-      syncStatus: document.querySelector('[data-sync-status]'),
       fileInput: document.getElementById('import-file-input')
     };
   }
@@ -219,9 +218,9 @@
       const title = DOM.create('div', 'archive-title');
       title.textContent = `📅 ${dateStr}`;
       const date = DOM.create('div');
-      date.style.fontSize = '0.85em';
-      date.style.color = '#999';
-      date.style.marginTop = '5px';
+      date.style.fontSize = '0.8rem';
+      date.style.color = '#94a3b8';
+      date.style.marginTop = '4px';
       date.textContent = `Zarchiwizowano: ${archivedDate}`;
       headerLeft.appendChild(title);
       headerLeft.appendChild(date);
@@ -230,32 +229,17 @@
       const stat1 = DOM.create('div', 'archive-stat');
       stat1.innerHTML = `Wykonanie: <strong>${week.stats.percentage}%</strong>`;
       const stat2 = DOM.create('div', 'archive-stat');
-      stat2.innerHTML = `Punkty: <strong>${week.stats.totalChecked}/${week.stats.totalPossible}</strong>`;
-      const stat3 = DOM.create('div', 'archive-stat');
-      stat3.innerHTML = `Perfekcyjne: <strong>${week.stats.perfectDays}/${week.stats.activeDays}</strong>`;
+      stat2.innerHTML = `Zysk: <strong style="color: ${(week.profit || 0) >= 0 ? '#10b981' : '#ef4444'}">${week.profit || 0} R</strong>`;
 
       const profitContainer = DOM.create('div', 'archive-profit');
-      const profitLabel = DOM.create('span');
-      profitLabel.textContent = 'Zysk: ';
-      profitLabel.style.color = '#718096';
-      profitLabel.style.fontSize = '0.9em';
-
       const profitInput = DOM.create('input', 'archive-profit-input', {
         type: 'number',
-        placeholder: '0',
+        placeholder: 'Zysk R',
         data: { action: 'update-profit', index: index }
       });
       profitInput.value = week.profit !== null && week.profit !== undefined ? week.profit : '';
-      profitInput.style.width = '100px';
-
-      const profitCurrency = DOM.create('span');
-      profitCurrency.textContent = ' R';
-      profitCurrency.style.color = '#718096';
-      profitCurrency.style.fontSize = '0.9em';
-
-      profitContainer.appendChild(profitLabel);
+      profitInput.style.width = '90px';
       profitContainer.appendChild(profitInput);
-      profitContainer.appendChild(profitCurrency);
 
       const deleteBtn = DOM.create('button', 'archive-delete-btn', { data: { action: 'delete-archive', index: index } });
       deleteBtn.textContent = '🗑️';
@@ -265,7 +249,6 @@
 
       headerRight.appendChild(stat1);
       headerRight.appendChild(stat2);
-      headerRight.appendChild(stat3);
       headerRight.appendChild(profitContainer);
       headerRight.appendChild(deleteBtn);
       headerRight.appendChild(icon);
@@ -474,14 +457,16 @@
 
       const dateBox = DOM.create('div', 'date-range');
       const label = DOM.create('strong');
-      label.textContent = 'Zakres dat: ';
+      label.textContent = 'Zakres dat tygodnia: ';
       dateBox.appendChild(label);
       dateBox.appendChild(Templates.dateInput());
       dateBox.appendChild(DOM.text(' — '));
       dateBox.appendChild(Templates.dateInput());
 
       state.dom.currentWeek.appendChild(dateBox);
-      state.dom.currentWeek.appendChild(Templates.table());
+      const wrapper = DOM.create('div', 'card-container');
+      wrapper.appendChild(Templates.table());
+      state.dom.currentWeek.appendChild(wrapper);
 
       const summary = DOM.create('div', 'week-summary');
       summary.innerHTML = `
@@ -538,9 +523,9 @@
       const goalMet = parseFloat(stats.percentage) >= parseFloat(settings.weeklyGoal);
       const perfectGoalMet = stats.perfectDays >= parseInt(settings.perfectDaysGoal);
 
-      state.dom.currentStats.appendChild(Templates.statCard(`Wykonanie (cel: ${settings.weeklyGoal}%)`, `${stats.percentage}%`, goalMet ? '✅ Cel osiągnięty!' : '⚠️ Poniżej celu'));
+      state.dom.currentStats.appendChild(Templates.statCard(`Wykonanie (cel: ${settings.weeklyGoal}%)`, `${stats.percentage}%`, goalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
       state.dom.currentStats.appendChild(Templates.statCard('Łącznie punktów', `${stats.totalChecked}/${stats.totalPossible}`));
-      state.dom.currentStats.appendChild(Templates.statCard(`Perfekcyjne dni (cel: ${settings.perfectDaysGoal})`, `${stats.perfectDays}/${stats.activeDays}`, perfectGoalMet ? '✅ Cel osiągnięty!' : '⚠️ Poniżej celu'));
+      state.dom.currentStats.appendChild(Templates.statCard(`Perfekcyjne dni (cel: ${settings.perfectDaysGoal})`, `${stats.perfectDays}/${stats.activeDays}`, perfectGoalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
     },
 
     archive() {
@@ -550,15 +535,15 @@
         return;
       }
 
-      const profitInput = prompt('Podaj zysk/stratę dla tego tygodnia (opcjonalnie w R):', '');
-      const profit = profitInput !== null && profitInput.trim() !== '' ? parseFloat(profitInput.trim()) : null;
+      const profitInput = prompt('Podaj zysk/stratę dla tego tygodnia w jednostkach R (np. 3.5 lub -1):', '');
+      const profit = profitInput !== null && profitInput.trim() !== '' ? parseFloat(profitInput.trim()) : 0;
       const stats = Calc.weekStats(weekData);
 
       const archivedWeek = {
         ...weekData,
         archivedAt: new Date().toISOString(),
         stats: stats,
-        profit: profit
+        profit: isNaN(profit) ? 0 : profit
       };
 
       const history = History.get();
@@ -575,7 +560,7 @@
     get() { return Storage.get(STORAGE_KEYS.HISTORY) || []; },
 
     clear() {
-      if (!confirm('Czy na pewno chcesz wyczyścić całą historię?')) return;
+      if (!confirm('Czy na pewno chcesz usunąć całą historię?')) return;
       Storage.remove(STORAGE_KEYS.HISTORY);
       this.render();
       this.updateStats();
@@ -585,7 +570,7 @@
     deleteItem(index) {
       const history = this.get();
       if (!history[index]) return;
-      if (!confirm('Czy na pewno chcesz usunąć ten tydzień?')) return;
+      if (!confirm('Usunąć ten tydzień z historii?')) return;
       history.splice(index, 1);
       Storage.set(STORAGE_KEYS.HISTORY, history);
       this.render();
@@ -596,9 +581,10 @@
     updateProfit(index, value) {
       const history = this.get();
       if (!history[index]) return;
-      history[index].profit = value !== '' ? parseFloat(value) : null;
+      history[index].profit = value !== '' ? parseFloat(value) : 0;
       Storage.set(STORAGE_KEYS.HISTORY, history);
       Charts.render();
+      this.updateStats();
     },
 
     render() {
@@ -606,8 +592,8 @@
       DOM.empty(state.dom.archiveList);
 
       if (history.length === 0) {
-        const empty = DOM.create('div', 'empty-archive');
-        empty.innerHTML = `<p style="color: #666;">Brak zarchiwizowanych tygodni w historii.</p>`;
+        const empty = DOM.create('div', '', { style: 'color: #94a3b8; text-align: center; padding: 20px;' });
+        empty.textContent = 'Brak zarchiwizowanych tygodni w historii.';
         state.dom.archiveList.appendChild(empty);
         return;
       }
@@ -627,16 +613,25 @@
         return;
       }
 
-      let totalChecked = 0, totalPossible = 0, totalPerfectDays = 0;
+      let totalChecked = 0, totalPossible = 0, totalProfit = 0, winningWeeks = 0, bestPercentage = 0;
       history.forEach(w => {
         totalChecked += w.stats.totalChecked;
         totalPossible += w.stats.totalPossible;
-        totalPerfectDays += w.stats.perfectDays;
+        const p = parseFloat(w.profit) || 0;
+        totalProfit += p;
+        if (p > 0) winningWeeks++;
+        const perc = parseFloat(w.stats.percentage) || 0;
+        if (perc > bestPercentage) bestPercentage = perc;
       });
 
       const avgPercentage = totalPossible > 0 ? ((totalChecked / totalPossible) * 100).toFixed(1) : 0;
-      state.dom.historyStats.appendChild(Templates.statCard('Średnie wykonanie', `${avgPercentage}%`));
-      state.dom.historyStats.appendChild(Templates.statCard('Łącznie tygodni', history.length));
+      const avgProfit = (totalProfit / history.length).toFixed(2);
+      const winRateWeeks = ((winningWeeks / history.length) * 100).toFixed(0);
+
+      state.dom.historyStats.appendChild(Templates.statCard('Średnie wykonanie', `${avgPercentage}%`, `Najlepszy: ${bestPercentage}%`));
+      state.dom.historyStats.appendChild(Templates.statCard('Całkowity zysk', `${totalProfit.toFixed(1)} R`, `Śr. tygodniowo: ${avgProfit} R`));
+      state.dom.historyStats.appendChild(Templates.statCard('Skuteczność tygodniowa', `${winRateWeeks}%`, `${winningWeeks} z ${history.length} zyskownych`));
+      state.dom.historyStats.appendChild(Templates.statCard('Łącznie tygodni', history.length, `Zapisków: ${totalChecked} zasad`));
     }
   };
 
@@ -656,6 +651,13 @@
       if (state.charts.trend) state.charts.trend.destroy();
       if (!state.dom.trendChart) return;
 
+      // Wyliczanie skumulowanego zysku
+      let cumulative = 0;
+      const cumulativeProfit = history.map(w => {
+        cumulative += parseFloat(w.profit) || 0;
+        return cumulative;
+      });
+
       state.charts.trend = new Chart(state.dom.trendChart, {
         type: 'line',
         data: {
@@ -664,14 +666,17 @@
             {
               label: 'Wykonanie (%)',
               data: history.map(w => parseFloat(w.stats.percentage)),
-              borderColor: '#2b6cb0',
+              borderColor: '#4f46e5',
+              backgroundColor: 'rgba(79, 70, 229, 0.1)',
+              fill: true,
               yAxisID: 'y-percentage',
               tension: 0.3
             },
             {
-              label: 'Zysk (R)',
-              data: history.map(w => parseFloat(w.profit) || 0),
-              borderColor: '#2f855a',
+              label: 'Skumulowany zysk (R)',
+              data: cumulativeProfit,
+              borderColor: '#10b981',
+              borderWidth: 2,
               yAxisID: 'y-profit',
               tension: 0.3
             }
@@ -679,9 +684,11 @@
         },
         options: {
           responsive: true,
+          plugins: { legend: { labels: { color: '#f8fafc' } } },
           scales: {
-            'y-percentage': { type: 'linear', position: 'left', beginAtZero: true, max: 100 },
-            'y-profit': { type: 'linear', position: 'right', beginAtZero: true }
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            'y-percentage': { type: 'linear', position: 'left', beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            'y-profit': { type: 'linear', position: 'right', beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { drawOnChartArea: false } }
           }
         }
       });
@@ -708,12 +715,19 @@
         data: {
           labels: FIELDS,
           datasets: [{
-            label: 'Skuteczność (%)',
+            label: 'Skuteczność zasad (%)',
             data: FIELDS.map(f => categoryData[f].total > 0 ? ((categoryData[f].checked / categoryData[f].total) * 100).toFixed(1) : 0),
-            backgroundColor: ['#667eea', '#764ba2', '#48bb78', '#ed8936', '#4299e1']
+            backgroundColor: ['#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ec4899']
           }]
         },
-        options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+          }
+        }
       });
     }
   };
@@ -774,7 +788,7 @@
       reader.onload = (e) => {
         try {
           const parsed = JSON.parse(e.target.result);
-          if (confirm('Nadpisać obecne dane danymi z pliku?')) {
+          if (confirm('Nadpisać obecne dane danymi z pliku kopii zapasowej?')) {
             if (parsed.currentWeek) Storage.set(STORAGE_KEYS.CURRENT_WEEK, parsed.currentWeek);
             if (parsed.history) Storage.set(STORAGE_KEYS.HISTORY, parsed.history);
             if (parsed.settings) Storage.set(STORAGE_KEYS.SETTINGS, parsed.settings);
