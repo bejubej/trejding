@@ -1,39 +1,106 @@
-<!-- GitHub Sync Section -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorecard Trading - Professional</title>
+
+  <!-- External libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>📊 Scorecard Trading</h1>
+
+  <!-- Tabs -->
+  <div class="tabs" data-tabs>
+    <button class="tab active" data-tab="current">📝 Aktywny tydzień</button>
+    <button class="tab" data-tab="history">📚 Historia</button>
+    <button class="tab" data-tab="settings">⚙️ Ustawienia</button>
+  </div>
+
+  <!-- Current Week Tab -->
+  <div id="tab-current" class="tab-content active">
+    <div class="stats-overview" data-current-stats></div>
+
+    <div class="button-container">
+      <button class="btn btn-warning" data-action="archive-week">📦 Archiwizuj tydzień</button>
+      <button class="btn btn-danger" data-action="reset-current">🔄 Reset tygodnia</button>
+    </div>
+
+    <div data-current-week></div>
+  </div>
+
+  <!-- History Tab -->
+  <div id="tab-history" class="tab-content">
+    <div class="stats-overview" data-history-stats></div>
+
+    <div class="chart-container">
+      <div class="chart-title">📈 Trend wykonania tygodniowego oraz Zysk (R)</div>
+      <canvas data-chart="trend"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">📊 Porównanie skuteczności kategorii</div>
+      <canvas data-chart="categories"></canvas>
+    </div>
+
+    <div class="button-container">
+      <button class="btn btn-danger" data-action="clear-history">🗑️ Wyczyść historię</button>
+    </div>
+
+    <h2 style="margin-top: 30px; margin-bottom: 15px;">Zarchiwizowane tygodnie</h2>
+    <div data-archive-list></div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div id="tab-settings" class="tab-content">
+
+    <!-- Weekly Goals Section -->
     <div class="settings-section">
-      <h3>☁️ Synchronizacja GitHub Gist</h3>
-
+      <h3>🎯 Cele tygodniowe</h3>
       <div class="setting-item">
-        <label class="setting-label">GitHub Personal Access Token</label>
-        <input type="password" class="setting-input" data-input="github-token" placeholder="ghp_xxxxxxxxxxxxx" style="width: 100%; max-width: 500px;">
+        <label class="setting-label">Minimalny cel wykonania (%)</label>
+        <input type="number" class="setting-input" data-setting="weeklyGoal" min="0" max="100" value="75">
       </div>
-
       <div class="setting-item">
-        <label class="setting-label">ID Gista</label>
-        <input type="text" class="setting-input" data-input="gist-id" placeholder="np. a1b2c3d4e5f6..." style="width: 100%; max-width: 500px;">
+        <label class="setting-label">Cel perfekcyjnych dni</label>
+        <input type="number" class="setting-input" data-setting="perfectDaysGoal" min="0" max="5" value="2">
       </div>
+    </div>
 
-      <div class="setting-item">
-        <label class="setting-label">
-          <input type="checkbox" data-input="auto-sync">
-          Automatyczna synchronizacja (co 5 min)
-        </label>
-      </div>
+    <!-- File Sync Section -->
+    <div class="settings-section">
+      <h3>📁 Kopia zapasowa danych (Plik TXT / JSON)</h3>
+      <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+        Zapisz wszystkie swoje postępy, historię i ustawienia do pliku na komputerze lub przywróć je z pliku.
+      </p>
+
+      <input type="file" id="import-file-input" accept=".txt,.json" style="display: none;">
 
       <div class="button-container">
-        <button class="btn btn-primary" data-action="save-token">💾 Zapisz Token</button>
-        <button class="btn btn-danger" data-action="remove-token">🗑️ Usuń Token</button>
-        <button class="btn btn-success" data-action="save-gist">☁️ Zapisz do chmury</button>
-        <button class="btn btn-primary" data-action="load-gist">🔍 Pobierz z chmury</button>
+        <button class="btn btn-success" data-action="export-file">📥 Eksportuj do pliku</button>
+        <button class="btn btn-primary" data-action="import-file">📤 Importuj z pliku</button>
       </div>
 
       <div class="sync-status" data-sync-status></div>
-      <div data-gist-info style="margin-top: 10px; font-size: 0.85em; color: #666;"></div>
-
-      <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 6px; font-size: 0.9em;">
-        <strong>📝 Jak uzyskać token?</strong><br>
-        1. Przejdź do GitHub → Settings → Developer settings<br>
-        2. Personal access tokens → Tokens (classic) → Generate new token<br>
-        3. Zaznacz tylko uprawnienie <strong>"gist"</strong><br>
-        4. Skopiuj wygenerowany token i wklej powyżej
-      </div>
     </div>
+
+    <!-- Danger Zone -->
+    <div class="settings-section">
+      <h3>⚠️ Strefa niebezpieczna</h3>
+      <button class="btn btn-danger" data-action="reset-all">🗑️ Wyczyść WSZYSTKIE dane aplikacji</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- App Script -->
+<script src="app.js"></script>
+
+</body>
+</html>
