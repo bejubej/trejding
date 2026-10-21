@@ -91,8 +91,10 @@
   };
 
   const Templates = {
-    toggle(value = 0) {
-      return DOM.create('div', `toggle ${value ? 'on' : 'off'}`, { data: { action: 'toggle', value: value } });
+    checkbox(checked = false) {
+      const el = DOM.create('input', 'rule-checkbox', { type: 'checkbox' });
+      el.checked = checked;
+      return el;
     },
     dayOffButton(active = false) {
       const el = DOM.create('span', `day-off-btn ${active ? 'active' : ''}`, { data: { action: 'toggle-day-off' } });
@@ -113,7 +115,7 @@
       tr.appendChild(DOM.create('td', 'field-description-daycell'));
       return tr;
     },
-    tableRow(dayIndex, dayName, toggleValues = [], isDayOff = false) {
+    tableRow(dayIndex, dayName, checkedValues = [], isDayOff = false) {
       const tr = DOM.create('tr', isDayOff ? 'day-off' : '', { data: { dayIndex: dayIndex } });
 
       const dayCell = DOM.create('td', 'day-cell');
@@ -123,13 +125,15 @@
 
       FIELDS.forEach((_, fieldIndex) => {
         const td = DOM.create('td');
-        const value = toggleValues[fieldIndex] !== undefined ? parseInt(toggleValues[fieldIndex]) : 0;
-        td.appendChild(Templates.toggle(value));
+        const isChecked = checkedValues[fieldIndex] !== undefined ? !!checkedValues[fieldIndex] : false;
+        const cb = Templates.checkbox(isChecked);
+        if (isDayOff) cb.disabled = true;
+        td.appendChild(cb);
         tr.appendChild(td);
       });
 
       const sumCell = DOM.create('td', 'sumCell');
-      sumCell.textContent = '0/' + FIELDS.length;
+      sumCell.textContent = `0/${FIELDS.length}`;
       tr.appendChild(sumCell);
 
       return tr;
@@ -159,16 +163,16 @@
       table.appendChild(thead);
 
       DAYS.forEach((day, index) => {
-        let toggles = [];
+        let checkedValues = [];
         let isDayOff = false;
 
         if (weekData && weekData.days && weekData.days[index]) {
           const dayData = weekData.days[index];
-          toggles = dayData.toggles || [];
+          checkedValues = dayData.checked || [];
           isDayOff = dayData.isDayOff || false;
         }
 
-        tbody.appendChild(Templates.tableRow(index, day, toggles, isDayOff));
+        tbody.appendChild(Templates.tableRow(index, day, checkedValues, isDayOff));
       });
 
       table.appendChild(tbody);
@@ -281,14 +285,13 @@
         tr.appendChild(dayCell);
 
         let daySum = 0;
-        day.toggles.forEach(val => {
-          const value = parseInt(val) || 0;
-          daySum += value;
+        day.checked.forEach(isChecked => {
+          const val = isChecked ? 1 : 0;
+          daySum += val;
           const td = DOM.create('td');
-          const toggle = DOM.create('div', `toggle ${value ? 'on' : 'off'}`);
-          toggle.style.pointerEvents = 'none';
-          toggle.textContent = val;
-          td.appendChild(toggle);
+          const cb = Templates.checkbox(isChecked);
+          cb.disabled = true;
+          td.appendChild(cb);
           tr.appendChild(td);
         });
 
@@ -330,19 +333,21 @@
         activeDays++;
         let daySum = 0;
 
-        day.toggles.forEach((val, fieldIndex) => {
-          const value = parseInt(val) || 0;
-          totalChecked += value;
-          daySum += value;
+        day.checked.forEach((isChecked, fieldIndex) => {
+          const val = isChecked ? 1 : 0;
+          totalChecked += val;
+          daySum += val;
 
           const fieldName = FIELDS[fieldIndex];
           if (categoryStats[fieldName]) {
-            categoryStats[fieldName].checked += value;
+            categoryStats[fieldName].checked += val;
             categoryStats[fieldName].total += 1;
           }
         });
 
-        if (daySum === FIELDS.length) perfectDays++;
+        if (daySum === FIELDS.length) {
+          perfectDays++;
+        }
       });
 
       const totalPossible = activeDays * FIELDS.length;
@@ -372,9 +377,10 @@
       };
 
       rows.forEach(row => {
-        const toggles = Array.from(row.querySelectorAll('[data-action="toggle"]')).map(t => t.dataset.value);
+        const checkboxes = Array.from(row.querySelectorAll('input[type="checkbox"]'));
+        const checked = checkboxes.map(cb => cb.checked);
         const isDayOff = row.classList.contains('day-off');
-        weekData.days.push({ toggles, isDayOff });
+        weekData.days.push({ checked, isDayOff });
       });
 
       Storage.set(STORAGE_KEYS.CURRENT_WEEK, weekData);
@@ -401,14 +407,12 @@
           const btn = row.querySelector('[data-action="toggle-day-off"]');
           if (btn) DOM.setClass(btn, 'active', day.isDayOff);
 
-          const toggles = row.querySelectorAll('[data-action="toggle"]');
-          toggles.forEach((toggle, i) => {
-            if (day.toggles && day.toggles[i] !== undefined) {
-              const val = day.toggles[i];
-              toggle.textContent = val;
-              toggle.dataset.value = val;
-              toggle.className = `toggle ${val === '1' ? 'on' : 'off'}`;
+          const checkboxes = row.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach((cb, i) => {
+            if (day.checked && day.checked[i] !== undefined) {
+              cb.checked = !!day.checked[i];
             }
+            cb.disabled = day.isDayOff;
           });
         }
       });
@@ -464,9 +468,9 @@
           return;
         }
 
-        const toggles = row.querySelectorAll('[data-action="toggle"]');
+        const checkboxes = row.querySelectorAll('input[type="checkbox"]');
         let sum = 0;
-        toggles.forEach(t => sum += parseInt(t.dataset.value) || 0);
+        checkboxes.forEach(cb => { if (cb.checked) sum++; });
 
         sumCell.textContent = `${sum}/${FIELDS.length}`;
         sumCell.className = 'sumCell';
@@ -841,25 +845,26 @@
     }
 
     if (state.dom.currentWeek) {
-      state.dom.currentWeek.addEventListener('click', e => {
-        const toggleBtn = e.target.closest('[data-action="toggle"]');
-        if (toggleBtn) {
-          const val = parseInt(toggleBtn.dataset.value) === 1 ? 0 : 1;
-          toggleBtn.dataset.value = val;
-          toggleBtn.textContent = val;
-          toggleBtn.className = `toggle ${val === 1 ? 'on' : 'off'}`;
+      state.dom.currentWeek.addEventListener('change', e => {
+        if (e.target.type === 'checkbox') {
           CurrentWeek.updateSums();
           CurrentWeek.updateStats();
           CurrentWeek.save();
-          return;
         }
+      });
 
+      state.dom.currentWeek.addEventListener('click', e => {
         const dayOffBtn = e.target.closest('[data-action="toggle-day-off"]');
         if (dayOffBtn) {
           const row = dayOffBtn.closest('tr');
           if (row) {
             row.classList.toggle('day-off');
             dayOffBtn.classList.toggle('active');
+            const isOff = row.classList.contains('day-off');
+            row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              cb.disabled = isOff;
+              if (isOff) cb.checked = false;
+            });
             CurrentWeek.updateSums();
             CurrentWeek.updateStats();
             CurrentWeek.save();
