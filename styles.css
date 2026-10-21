@@ -242,19 +242,6 @@ tr.day-off {
   opacity: 0.5;
 }
 
-/* Textarea Notes */
-textarea.notes {
-  width: 100%;
-  height: 42px;
-  resize: vertical;
-  padding: 8px;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid var(--border);
-  color: #fff;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
-
 /* Sum status cells */
 .sumCell { font-weight: 700; }
 .sum-perfect { color: var(--success); }
