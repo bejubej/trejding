@@ -1,4 +1,5 @@
 import { DAYS, FIELDS, FIELD_DESCRIPTIONS, DOM } from './dom.js';
+import { History } from './history.js';
 
 export const Templates = {
   checkbox(checked = false, index = null) {
@@ -144,10 +145,14 @@ export const Templates = {
     profitInput.addEventListener('click', (e) => e.stopPropagation());
     profitContainer.appendChild(profitInput);
 
-    const deleteBtn = DOM.create('button', 'archive-delete-btn', { data: { action: 'delete-archive', index: index } });
+    const deleteBtn = DOM.create('button', 'archive-delete-btn');
     deleteBtn.textContent = '🗑️';
     deleteBtn.title = 'Usuń tydzień';
-    deleteBtn.addEventListener('click', (e) => e.stopPropagation());
+    // Bezpośrednie przypisanie usuwania z historii
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      History.deleteItem(index);
+    });
 
     const icon = DOM.create('span', 'expand-icon', { data: { expandIcon: index } });
     icon.textContent = '▼';
