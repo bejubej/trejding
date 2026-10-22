@@ -228,7 +228,7 @@ export const Templates = {
       } else {
         sumCell.textContent = `${daySum}/${FIELDS.length}`;
         if (daySum === FIELDS.length) sumCell.classList.add('sum-perfect');
-        else if (sum >= FIELDS.length * 0.6) sumCell.classList.add('sum-good');
+        else if (daySum >= FIELDS.length * 0.6) sumCell.classList.add('sum-good');
         else sumCell.classList.add('sum-poor');
       }
       tr.appendChild(sumCell);
