@@ -1,13 +1,15 @@
 import { DAYS, FIELDS, FIELD_DESCRIPTIONS, DOM } from './dom.js';
 
 export const Templates = {
-  checkbox(checked = false) {
-    const el = DOM.create('input', 'rule-checkbox', { type: 'checkbox' });
+  checkbox(checked = false, index = null) {
+    const attrs = { type: 'checkbox' };
+    if (index !== null) attrs.data = { archiveCheckbox: index };
+    const el = DOM.create('input', 'rule-checkbox', attrs);
     el.checked = !!checked;
     return el;
   },
   dayOffButton(active = false) {
-    const el = DOM.create('span', `day-off-btn ${active ? 'active' : ''}`, { data: { action: 'toggle-day-off' } });
+    const el = DOM.create('span', `day-off-btn ${active ? 'active' : ''}`, { data: { action: 'toggle-archive-day-off' } });
     el.textContent = '🚫 Dzień wolny';
     return el;
   },
@@ -106,7 +108,7 @@ export const Templates = {
     return card;
   },
   archiveItem(week, index) {
-    const item = DOM.create('div', 'archive-item');
+    const item = DOM.create('div', 'archive-item', { data: { archiveIndex: index } });
     const dateRange = week.dateRange || { start: '?', end: '?' };
     const dateStr = `${dateRange.start} → ${dateRange.end}`;
     const archivedDate = week.archivedAt ? new Date(week.archivedAt).toLocaleDateString('pl-PL') : 'Brak daty';
@@ -125,8 +127,9 @@ export const Templates = {
 
     const stats = week.stats || { percentage: 0 };
     const headerRight = DOM.create('div', 'archive-stats');
-    const stat1 = DOM.create('div', 'archive-stat');
+    const stat1 = DOM.create('div', 'archive-stat', { data: { archiveStatPerc: index } });
     stat1.innerHTML = `Wykonanie: <strong>${stats.percentage}%</strong>`;
+    
     const stat2 = DOM.create('div', 'archive-stat');
     stat2.innerHTML = `Zysk: <strong style="color: ${(week.profit || 0) >= 0 ? '#10b981' : '#ef4444'}">${week.profit || 0} R</strong>`;
 
@@ -143,6 +146,7 @@ export const Templates = {
 
     const deleteBtn = DOM.create('button', 'archive-delete-btn', { data: { action: 'delete-archive', index: index } });
     deleteBtn.textContent = '🗑️';
+    deleteBtn.title = 'Usuń tydzień';
     deleteBtn.addEventListener('click', (e) => e.stopPropagation());
 
     const icon = DOM.create('span', 'expand-icon', { data: { expandIcon: index } });
@@ -158,14 +162,14 @@ export const Templates = {
     header.appendChild(headerRight);
 
     const content = DOM.create('div', 'archive-content', { data: { archiveContent: index } });
-    content.appendChild(Templates.archiveTable(week));
+    content.appendChild(Templates.archiveTable(week, index));
 
     item.appendChild(header);
     item.appendChild(content);
     return item;
   },
-  archiveTable(week) {
-    const table = DOM.create('table');
+  archiveTable(week, archiveIndex) {
+    const table = DOM.create('table', '', { data: { archiveTableIndex: archiveIndex } });
     const thead = DOM.create('thead');
     const tbody = DOM.create('tbody');
 
@@ -191,7 +195,7 @@ export const Templates = {
     const days = week.days || [];
     days.forEach((day, index) => {
       const isDayOff = day.isDayOff || false;
-      const tr = DOM.create('tr', isDayOff ? 'day-off' : '');
+      const tr = DOM.create('tr', isDayOff ? 'day-off' : '', { data: { dayIndex: index } });
       const dayCell = DOM.create('td', 'day-cell');
       dayCell.textContent = DAYS[index] || `Dzień ${index + 1}`;
       if (isDayOff) {
@@ -208,7 +212,7 @@ export const Templates = {
         daySum += val;
         const td = DOM.create('td');
         const cb = Templates.checkbox(isChecked);
-        cb.disabled = true;
+        if (isDayOff) cb.disabled = true;
         td.appendChild(cb);
         tr.appendChild(td);
       });
