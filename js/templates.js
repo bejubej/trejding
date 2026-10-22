@@ -3,7 +3,7 @@ import { DAYS, FIELDS, FIELD_DESCRIPTIONS, DOM } from './dom.js';
 export const Templates = {
   checkbox(checked = false) {
     const el = DOM.create('input', 'rule-checkbox', { type: 'checkbox' });
-    el.checked = checked;
+    el.checked = !!checked;
     return el;
   },
   dayOffButton(active = false) {
@@ -78,7 +78,7 @@ export const Templates = {
 
       if (weekData && weekData.days && weekData.days[index]) {
         const dayData = weekData.days[index];
-        checkedValues = dayData.checked || [];
+        checkedValues = dayData.checked || (dayData.toggles ? dayData.toggles.map(v => v === '1' || v === 1) : []);
         isDayOff = dayData.isDayOff || false;
       }
 
@@ -107,8 +107,9 @@ export const Templates = {
   },
   archiveItem(week, index) {
     const item = DOM.create('div', 'archive-item');
-    const dateStr = `${week.dateRange.start} → ${week.dateRange.end}`;
-    const archivedDate = new Date(week.archivedAt).toLocaleDateString('pl-PL');
+    const dateRange = week.dateRange || { start: '?', end: '?' };
+    const dateStr = `${dateRange.start} → ${dateRange.end}`;
+    const archivedDate = week.archivedAt ? new Date(week.archivedAt).toLocaleDateString('pl-PL') : 'Brak daty';
 
     const header = DOM.create('div', 'archive-header', { data: { action: 'toggle-archive', index: index } });
     const headerLeft = DOM.create('div');
@@ -122,9 +123,10 @@ export const Templates = {
     headerLeft.appendChild(title);
     headerLeft.appendChild(date);
 
+    const stats = week.stats || { percentage: 0 };
     const headerRight = DOM.create('div', 'archive-stats');
     const stat1 = DOM.create('div', 'archive-stat');
-    stat1.innerHTML = `Wykonanie: <strong>${week.stats.percentage}%</strong>`;
+    stat1.innerHTML = `Wykonanie: <strong>${stats.percentage}%</strong>`;
     const stat2 = DOM.create('div', 'archive-stat');
     stat2.innerHTML = `Zysk: <strong style="color: ${(week.profit || 0) >= 0 ? '#10b981' : '#ef4444'}">${week.profit || 0} R</strong>`;
 
@@ -136,7 +138,6 @@ export const Templates = {
     });
     profitInput.value = week.profit !== null && week.profit !== undefined ? week.profit : '';
     profitInput.style.width = '90px';
-    // Zatrzymanie propagacji, aby kliknięcie w pole edycji zysku nie zwijało/rozwijało całego akordeonu
     profitInput.addEventListener('click', (e) => e.stopPropagation());
     profitContainer.appendChild(profitInput);
 
@@ -187,11 +188,12 @@ export const Templates = {
     thead.appendChild(Templates.descriptionRow());
     table.appendChild(thead);
 
-    week.days.forEach((day, index) => {
+    const days = week.days || [];
+    days.forEach((day, index) => {
       const isDayOff = day.isDayOff || false;
       const tr = DOM.create('tr', isDayOff ? 'day-off' : '');
       const dayCell = DOM.create('td', 'day-cell');
-      dayCell.textContent = DAYS[index];
+      dayCell.textContent = DAYS[index] || `Dzień ${index + 1}`;
       if (isDayOff) {
         dayCell.appendChild(DOM.text(' '));
         dayCell.appendChild(Templates.dayOffButton(true));
@@ -199,13 +201,14 @@ export const Templates = {
       tr.appendChild(dayCell);
 
       let daySum = 0;
-      const checkedArr = day.checked || [];
+      const checkedArr = day.checked || (day.toggles ? day.toggles.map(v => v === '1' || v === 1) : []);
+      
       checkedArr.forEach(isChecked => {
         const val = isChecked ? 1 : 0;
         daySum += val;
         const td = DOM.create('td');
         const cb = Templates.checkbox(isChecked);
-        cb.disabled = true; // w archiwum podgląd jest tylko do odczytu
+        cb.disabled = true;
         td.appendChild(cb);
         tr.appendChild(td);
       });
