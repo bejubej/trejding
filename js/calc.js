@@ -18,7 +18,6 @@ export const Calc = {
       activeDays++;
       let daySum = 0;
 
-      // Obsługa zarówno formatu z checkboxami (checked), jak i starych danych (toggles)
       const checks = day.checked || (day.toggles ? day.toggles.map(v => v === '1' || v === 1 || v === true) : []);
 
       checks.forEach((isChecked, fieldIndex) => {
