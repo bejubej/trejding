@@ -1,5 +1,6 @@
-import { STORAGE_KEYS, DOM } from './dom.js';
+import { STORAGE_KEYS, FIELDS, DOM } from './dom.js';
 import { Storage } from './storage.js';
+import { Calc } from './calc.js';
 import { Templates } from './templates.js';
 import { Charts } from './charts.js';
 import { state } from './app.js';
@@ -35,6 +36,60 @@ export const History = {
     this.updateStats();
   },
 
+  updateArchivedWeek(archiveIndex) {
+    const history = this.get();
+    if (!history[archiveIndex]) return;
+
+    const contentDiv = document.querySelector(`[data-archive-content="${archiveIndex}"]`);
+    if (!contentDiv) return;
+
+    const table = contentDiv.querySelector('table');
+    if (!table) return;
+
+    const rows = table.querySelectorAll('tbody tr');
+    const updatedDays = [];
+
+    rows.forEach(row => {
+      const checkboxes = Array.from(row.querySelectorAll('input[type="checkbox"]'));
+      const checked = checkboxes.map(cb => cb.checked);
+      const isDayOff = row.classList.contains('day-off');
+      updatedDays.push({ checked, isDayOff });
+    });
+
+    history[archiveIndex].days = updatedDays;
+    history[archiveIndex].stats = Calc.weekStats(history[archiveIndex]);
+
+    Storage.set(STORAGE_KEYS.HISTORY, history);
+    Charts.render();
+    this.updateStats();
+
+    // Aktualizujemy wyświetlany procent wykonania w nagłówku archiwum bez zamykania akordeonu
+    const statPercEl = document.querySelector(`[data-archive-stat-perc="${archiveIndex}"]`);
+    if (statPercEl) {
+      statPercEl.innerHTML = `Wykonanie: <strong>${history[archiveIndex].stats.percentage}%</strong>`;
+    }
+
+    // Aktualizujemy sumy w wierszach tabeli archiwum
+    rows.forEach(row => {
+      const sumCell = row.querySelector('.sumCell');
+      if (!sumCell) return;
+      if (row.classList.contains('day-off')) {
+        sumCell.textContent = '—';
+        sumCell.className = 'sumCell sum-off';
+        return;
+      }
+      const checkboxes = row.querySelectorAll('input[type="checkbox"]');
+      let sum = 0;
+      checkboxes.forEach(cb => { if (cb.checked) sum++; });
+
+      sumCell.textContent = `${sum}/${FIELDS.length}`;
+      sumCell.className = 'sumCell';
+      if (sum === FIELDS.length) sumCell.classList.add('sum-perfect');
+      else if (sum >= FIELDS.length * 0.6) sumCell.classList.add('sum-good');
+      else sumCell.classList.add('sum-poor');
+    });
+  },
+
   render() {
     const history = this.get();
     if (!state.dom.archiveList) return;
@@ -50,6 +105,38 @@ export const History = {
     [...history].reverse().forEach((week, index) => {
       const actualIndex = history.length - 1 - index;
       state.dom.archiveList.appendChild(Templates.archiveItem(week, actualIndex));
+    });
+
+    // Podpięcie zdarzeń do nowo wyrenderowanego archiwum (edycja checkboxów oraz dni wolnych w historii)
+    state.dom.archiveList.querySelectorAll('.archive-content').forEach(content => {
+      content.addEventListener('change', e => {
+        if (e.target.type === 'checkbox') {
+          const archiveItem = e.target.closest('.archive-item');
+          if (archiveItem) {
+            const archiveIndex = parseInt(archiveItem.dataset.archiveIndex);
+            History.updateArchivedWeek(archiveIndex);
+          }
+        }
+      });
+
+      content.addEventListener('click', e => {
+        const dayOffBtn = e.target.closest('[data-action="toggle-archive-day-off"]');
+        if (dayOffBtn) {
+          const row = dayOffBtn.closest('tr');
+          const archiveItem = e.target.closest('.archive-item');
+          if (row && archiveItem) {
+            row.classList.toggle('day-off');
+            dayOffBtn.classList.toggle('active');
+            const isOff = row.classList.contains('day-off');
+            row.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              cb.disabled = isOff;
+              if (isOff) cb.checked = false;
+            });
+            const archiveIndex = parseInt(archiveItem.dataset.archiveIndex);
+            History.updateArchivedWeek(archiveIndex);
+          }
+        }
+      });
     });
   },
 
