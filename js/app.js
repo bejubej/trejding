@@ -40,7 +40,6 @@ function initEvents() {
       if (targetTab === 'history') {
         History.render();
         History.updateStats();
-        // Generujemy wykresy z opóźnieniem, aby DOM wyrenderował wymiary canvas
         setTimeout(() => Charts.render(), 50);
       }
     });
@@ -78,6 +77,17 @@ function initEvents() {
   }
 
   document.addEventListener('click', e => {
+    // Obsługa usuwania tygodnia z historii przez kosz
+    const deleteBtn = e.target.closest('[data-action="delete-archive"]');
+    if (deleteBtn) {
+      e.stopPropagation();
+      const index = parseInt(deleteBtn.dataset.index, 10);
+      if (!isNaN(index)) {
+        History.deleteItem(index);
+      }
+      return;
+    }
+
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
 
@@ -104,17 +114,13 @@ function initEvents() {
         if (icon) icon.classList.toggle('open');
       }
     }
-
-    if (action === 'delete-archive') {
-      History.deleteItem(parseInt(btn.dataset.index));
-    }
   });
 
   if (state.dom.archiveList) {
     state.dom.archiveList.addEventListener('input', e => {
       const input = e.target.closest('[data-action="update-profit"]');
       if (input) {
-        History.updateProfit(parseInt(input.dataset.index), input.value);
+        History.updateProfit(parseInt(input.dataset.index, 10), input.value);
       }
     });
   }
