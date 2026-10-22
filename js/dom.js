@@ -1,12 +1,12 @@
 export const DAYS = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"];
-export const FIELDS = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process/notPnL"];
+export const FIELDS = ["AlertMode", "Limit", "Aligned", "Reset 5min", "Process"];
 
 export const FIELD_DESCRIPTIONS = {
-  "AlertMode": "Otwieranie wykresu tylko po alercie",
-  "Limit": "Max 2L z rzędu",
-  "Aligned": "Zgodnie z setupem",
-  "Reset 5min": "Gdy niepewność - 5minut przerwa",
-  "Process/notPnL": "Nie ponawianie setupu, szeroki SL, bez BE z ręki, low hanging fruit"
+  "AlertMode": "",
+  "Limit": "",
+  "Aligned": "",
+  "Reset 5min": "",
+  "Process": ""
 };
 
 export const STORAGE_KEYS = {
