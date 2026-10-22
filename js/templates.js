@@ -9,8 +9,9 @@ export const Templates = {
     el.checked = !!checked;
     return el;
   },
-  dayOffButton(active = false) {
-    const el = DOM.create('span', `day-off-btn ${active ? 'active' : ''}`, { data: { action: 'toggle-archive-day-off' } });
+  dayOffButton(active = false, isArchive = false) {
+    const actionName = isArchive ? 'toggle-archive-day-off' : 'toggle-day-off';
+    const el = DOM.create('span', `day-off-btn ${active ? 'active' : ''}`, { data: { action: actionName } });
     el.textContent = '🚫 Dzień wolny';
     return el;
   },
@@ -205,7 +206,7 @@ export const Templates = {
       dayCell.textContent = DAYS[index] || `Dzień ${index + 1}`;
       if (isDayOff) {
         dayCell.appendChild(DOM.text(' '));
-        dayCell.appendChild(Templates.dayOffButton(true));
+        dayCell.appendChild(Templates.dayOffButton(true, true));
       }
       tr.appendChild(dayCell);
 
