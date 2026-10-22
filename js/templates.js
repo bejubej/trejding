@@ -1,4 +1,5 @@
 import { DAYS, FIELDS, FIELD_DESCRIPTIONS, DOM } from './dom.js';
+import { History } from './history.js';
 
 export const Templates = {
   checkbox(checked = false, index = null) {
@@ -144,10 +145,13 @@ export const Templates = {
     profitInput.addEventListener('click', (e) => e.stopPropagation());
     profitContainer.appendChild(profitInput);
 
-    const deleteBtn = DOM.create('button', 'archive-delete-btn', { data: { action: 'delete-archive', index: index } });
+    const deleteBtn = DOM.create('button', 'archive-delete-btn');
     deleteBtn.textContent = '🗑️';
     deleteBtn.title = 'Usuń tydzień';
-    deleteBtn.addEventListener('click', (e) => e.stopPropagation());
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      History.deleteItem(index);
+    });
 
     const icon = DOM.create('span', 'expand-icon', { data: { expandIcon: index } });
     icon.textContent = '▼';
@@ -224,7 +228,7 @@ export const Templates = {
       } else {
         sumCell.textContent = `${daySum}/${FIELDS.length}`;
         if (daySum === FIELDS.length) sumCell.classList.add('sum-perfect');
-        else if (daySum >= FIELDS.length * 0.6) sumCell.classList.add('sum-good');
+        else if (sum >= FIELDS.length * 0.6) sumCell.classList.add('sum-good');
         else sumCell.classList.add('sum-poor');
       }
       tr.appendChild(sumCell);
