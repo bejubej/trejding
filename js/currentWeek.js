@@ -37,6 +37,7 @@ export const CurrentWeek = {
   },
 
   render() {
+    if (!state.dom.currentWeek) return;
     DOM.empty(state.dom.currentWeek);
 
     const weekData = this.getData();
@@ -73,6 +74,7 @@ export const CurrentWeek = {
   },
 
   updateSums() {
+    if (!state.dom.currentWeek) return;
     const table = state.dom.currentWeek.querySelector('table');
     if (!table) return;
 
@@ -101,6 +103,7 @@ export const CurrentWeek = {
   },
 
   updateStats() {
+    if (!state.dom.currentWeek) return;
     const weekData = this.getData() || { days: [] };
     const table = state.dom.currentWeek.querySelector('table');
     if (table) {
@@ -122,13 +125,15 @@ export const CurrentWeek = {
     if (summaryPoints) summaryPoints.textContent = `${stats.totalChecked}/${stats.totalPossible}`;
     if (summaryPerfect) summaryPerfect.textContent = `${stats.perfectDays}/${stats.activeDays}`;
 
-    DOM.empty(state.dom.currentStats);
-    const goalMet = parseFloat(stats.percentage) >= parseFloat(settings.weeklyGoal);
-    const perfectGoalMet = stats.perfectDays >= parseInt(settings.perfectDaysGoal);
+    if (state.dom.currentStats) {
+      DOM.empty(state.dom.currentStats);
+      const goalMet = parseFloat(stats.percentage) >= parseFloat(settings.weeklyGoal);
+      const perfectGoalMet = stats.perfectDays >= parseInt(settings.perfectDaysGoal);
 
-    state.dom.currentStats.appendChild(Templates.statCard(`Wykonanie (cel: ${settings.weeklyGoal}%)`, `${stats.percentage}%`, goalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
-    state.dom.currentStats.appendChild(Templates.statCard('Łącznie punktów', `${stats.totalChecked}/${stats.totalPossible}`));
-    state.dom.currentStats.appendChild(Templates.statCard(`Perfekcyjne dni (cel: ${settings.perfectDaysGoal})`, `${stats.perfectDays}/${stats.activeDays}`, perfectGoalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
+      state.dom.currentStats.appendChild(Templates.statCard(`Wykonanie (cel: ${settings.weeklyGoal}%)`, `${stats.percentage}%`, goalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
+      state.dom.currentStats.appendChild(Templates.statCard('Łącznie punktów', `${stats.totalChecked}/${stats.totalPossible}`));
+      state.dom.currentStats.appendChild(Templates.statCard(`Perfekcyjne dni (cel: ${settings.perfectDaysGoal})`, `${stats.perfectDays}/${stats.activeDays}`, perfectGoalMet ? '✅ Cel osiągnięty' : '⚠️ Poniżej celu'));
+    }
   },
 
   reset() {
@@ -138,6 +143,7 @@ export const CurrentWeek = {
   },
 
   archive() {
+    if (!state.dom.currentWeek) return;
     const dateInputs = state.dom.currentWeek.querySelectorAll('[data-input="date"]');
     const startDate = dateInputs[0] ? dateInputs[0].value : '';
     const endDate = dateInputs[1] ? dateInputs[1].value : '';
@@ -167,6 +173,8 @@ export const CurrentWeek = {
 
     Storage.remove(STORAGE_KEYS.CURRENT_WEEK);
     this.render();
+    History.render();
+    History.updateStats();
     Charts.render();
     alert(`✅ Tydzień zarchiwizowany pomyślnie!`);
   }
